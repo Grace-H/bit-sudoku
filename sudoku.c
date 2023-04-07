@@ -5,11 +5,47 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define ROW 9
 #define CELL 3
-#define LOG(format, ...) fprintf(stderr, "%s(%d):\t" format "\n", \
+#define LOG(format, ...) fprintf(stderr, "%s(%d):\t" format "\n",	\
 				 __func__, __LINE__, ##__VA_ARGS__)
+
+// Check if board is solved - each row/column/square is solved
+// if the xor of all cells is 0x1ff (1 bit set)
+int is_solved(const uint16_t cells[ROW][ROW]) {
+  uint16_t row[ROW];
+  uint16_t col[ROW];
+  uint16_t sqr[ROW];
+
+  memset(&row, 0, ROW * sizeof(uint16_t));
+  memset(&col, 0, ROW * sizeof(uint16_t));
+  memset(&sqr, 0, ROW * sizeof(uint16_t));
+
+  for (int i = 0; i < ROW; i++) {
+    for (int j = 0; j < ROW; j++) {
+      uint16_t c = cells[i][j];
+      if (c && !(c & (c - 1))) {
+	row[i] |= c;
+	col[j] |= c;
+	sqr[i % CELL + ((j % CELL) * CELL)] |= c;
+	LOG("%d,%d", i, j);
+      }
+    }
+  }
+
+  uint16_t target = (1 << ROW) - 1;
+  LOG("target %d", target);
+  for (int i = 0; i < ROW; i++) {
+    if (row[i] != target || col[i] != target || sqr[i] != target) {
+      LOG("%d %d %d", row[i], col[i], sqr[i]);
+      return 0;
+    }
+  }
+  LOG("returning 1");
+  return 1;
+}
 
 int main(int argc, char **argv) {
 
@@ -54,15 +90,16 @@ int main(int argc, char **argv) {
     }
   }
 
+  LOG("here");
+
   // Cross off initial round of bits
   uint16_t rowfin[ROW];
   uint16_t colfin[ROW];
   uint16_t sqrfin[ROW];
-  for (int i = 0; i < ROW; i++) {
-    rowfin[i] = 0;
-    colfin[i] = 0;
-    sqrfin[i] = 0;
-  }
+
+  memset(&rowfin, 0, ROW * sizeof(uint16_t));
+  memset(&colfin, 0, ROW * sizeof(uint16_t));
+  memset(&sqrfin, 0, ROW * sizeof(uint16_t));
 
   for (int i = 0; i < ROW; i++) {
     for (int j = 0; j < ROW; j++) {
@@ -70,15 +107,27 @@ int main(int argc, char **argv) {
       if (!(c & (c - 1))) {
 	rowfin[i] |= c;
 	colfin[j] |= c;
-	sqrfin[i % 3 + ((j % 3) * 3)] |= c;
+	sqrfin[i % CELL + ((j % CELL) * CELL)] |= c;
       }
     }
   }
 
+  LOG("here 2");
+
   for (int i = 0; i < ROW; i++) {
     for (int j = 0; j < ROW; j++) {
-      cells[i][j] ^= rowfin[i] ^ colfin[j] ^ sqrfin[i % 3 + ((j % 3) * 3)];
+      if(cells[i][j] & (cells[i][j] - 1)) {
+	cells[i][j] &= ~rowfin[i];
+	cells[i][j] &= ~colfin[j];
+	cells[i][j] &= ~sqrfin[i % 3 + ((j % 3) * 3)]; // Check this math
+      }
     }
   }
+
+  if (is_solved(cells))
+    printf("Solved\n");
+  else
+    printf("Not solved\n");
+
   return 0;
 }
