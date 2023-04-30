@@ -12,6 +12,11 @@
 #define LOG(format, ...) fprintf(stderr, "%s(%d):\t" format "\n",	\
 				 __func__, __LINE__, ##__VA_ARGS__)
 
+// Get square number (0->9 reading left-right top-bottom) from i,j coordinates
+static inline int sqr_index(int i, int j) {
+  return (i / CELL) * CELL + j / CELL;
+}
+
 // Check if board is solved - each row/column/square is solved
 // if the xor of all cells is 0x1ff (1 bit set)
 int is_solved(const uint16_t cells[ROW][ROW]) {
@@ -31,7 +36,7 @@ int is_solved(const uint16_t cells[ROW][ROW]) {
 	col[j] |= c;
 	// square index is i rounded down to nearest multiple of cell size
 	// plus j divided by cell size
-	sqr[(i / CELL) * CELL + j / CELL] |= c;
+	sqr[sqr_index(i, j)] |= c;
       }
     }
   }
@@ -105,19 +110,17 @@ int main(int argc, char **argv) {
       if (!(c & (c - 1))) {
 	rowfin[i] |= c;
 	colfin[j] |= c;
-	sqrfin[i % CELL + ((j % CELL) * CELL)] |= c;
+	sqrfin[sqr_index(i, j)] |= c;
       }
     }
   }
-
-  LOG("here 2");
 
   for (int i = 0; i < ROW; i++) {
     for (int j = 0; j < ROW; j++) {
       if(cells[i][j] & (cells[i][j] - 1)) {
 	cells[i][j] &= ~rowfin[i];
 	cells[i][j] &= ~colfin[j];
-	cells[i][j] &= ~sqrfin[i % 3 + ((j % 3) * 3)]; // Check this math
+	cells[i][j] &= ~sqrfin[sqr_index(i, j)];
       }
     }
   }
