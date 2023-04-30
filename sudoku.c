@@ -29,21 +29,19 @@ int is_solved(const uint16_t cells[ROW][ROW]) {
       if (c && !(c & (c - 1))) {
 	row[i] |= c;
 	col[j] |= c;
-	sqr[i % CELL + ((j % CELL) * CELL)] |= c;
-	LOG("%d,%d", i, j);
+	// square index is i rounded down to nearest multiple of cell size
+	// plus j divided by cell size
+	sqr[(i / CELL) * CELL + j / CELL] |= c;
       }
     }
   }
 
   uint16_t target = (1 << ROW) - 1;
-  LOG("target %d", target);
   for (int i = 0; i < ROW; i++) {
     if (row[i] != target || col[i] != target || sqr[i] != target) {
-      LOG("%d %d %d", row[i], col[i], sqr[i]);
       return 0;
     }
   }
-  LOG("returning 1");
   return 1;
 }
 
