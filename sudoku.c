@@ -58,7 +58,7 @@ int main(int argc, char **argv) {
   }
 
   // Initialize bitvectors of cell possibilites
-  uint16_t cells[ROW][ROW];
+  uint16_t cells[ROW][ROW]; // only the first 9 bits will be used
   for (int i = 0; i < ROW; i++) {
     for (int j = 0; j < ROW; j++) {
       cells[i][j] = (1 << ROW) - 1;
@@ -93,8 +93,6 @@ int main(int argc, char **argv) {
     }
   }
 
-  LOG("here");
-
   // Cross off initial round of bits
   uint16_t rowfin[ROW];
   uint16_t colfin[ROW];
@@ -107,6 +105,7 @@ int main(int argc, char **argv) {
   for (int i = 0; i < ROW; i++) {
     for (int j = 0; j < ROW; j++) {
       uint16_t c = cells[i][j];
+      // if only one number is in bitvector (power of 2), mark it as found
       if (!(c & (c - 1))) {
 	rowfin[i] |= c;
 	colfin[j] |= c;
@@ -117,6 +116,7 @@ int main(int argc, char **argv) {
 
   for (int i = 0; i < ROW; i++) {
     for (int j = 0; j < ROW; j++) {
+      // if this cell is not solved, cross off possibilities
       if(cells[i][j] & (cells[i][j] - 1)) {
 	cells[i][j] &= ~rowfin[i];
 	cells[i][j] &= ~colfin[j];
