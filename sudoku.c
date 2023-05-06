@@ -77,7 +77,7 @@ int main(int argc, char **argv) {
     }
 
     for (int j = 0; j < ROW; j++) {
-      if (buf[j] != ' ') {
+      if (buf[j] != '0') {
 	char d = buf[j];
 	if (d >= '1' && d <= '9') {
 	  cells[i][j] = 1 << (d - '1');
