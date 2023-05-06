@@ -46,6 +46,21 @@ int is_solved(uint16_t row[ROW], uint16_t col[ROW], uint16_t sqr[ROW]) {
   return 1;
 }
 
+// Eliminate possibilites for each cell based on what values are already
+// in each row/column/square
+static void eliminate(uint16_t cells[ROW][ROW], const uint16_t row[ROW], const uint16_t col[ROW], const uint16_t sqr[ROW]) {
+  for (int i = 0; i < ROW; i++) {
+    for (int j = 0; j < ROW; j++) {
+      // if this cell is not solved, cross off possibilities
+      if(cells[i][j] & (cells[i][j] - 1)) {
+	cells[i][j] &= ~row[i];
+	cells[i][j] &= ~col[j];
+	cells[i][j] &= ~sqr[sqr_index(i, j)];
+      }
+    }
+  }
+}
+
 int main(int argc, char **argv) {
 
   if (argc != 2) {
@@ -100,23 +115,18 @@ int main(int argc, char **argv) {
 
   update_solved(cells, rowfin, colfin, sqrfin);
 
-  for (int i = 0; i < ROW; i++) {
-    for (int j = 0; j < ROW; j++) {
-      // if this cell is not solved, cross off possibilities
-      if(cells[i][j] & (cells[i][j] - 1)) {
-	cells[i][j] &= ~rowfin[i];
-	cells[i][j] &= ~colfin[j];
-	cells[i][j] &= ~sqrfin[sqr_index(i, j)];
-      }
+  for (int i = 0; i < 20; i++) {
+    // Do one round of elimination
+    eliminate(cells, rowfin, colfin, sqrfin);
+    update_solved(cells, rowfin, colfin, sqrfin);
+
+    if (is_solved(rowfin, colfin, sqrfin)) {
+      printf("Solved in %d iterations\n", i);
+      return 0;
     }
   }
 
-  update_solved(cells, rowfin, colfin, sqrfin);
-
-  if (is_solved(rowfin, colfin, sqrfin))
-    printf("Solved\n");
-  else
-    printf("Not solved\n");
+  printf("Not solved\n");
 
   return 0;
 }
