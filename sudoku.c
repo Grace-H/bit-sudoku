@@ -13,8 +13,25 @@
 				 __func__, __LINE__, ##__VA_ARGS__)
 
 // Get square number (0->9 reading left-right top-bottom) from i,j coordinates
+// Square index is i rounded down to nearest multiple of cell size + j divided by cell size
 static inline int sqr_index(int i, int j) {
   return (i / CELL) * CELL + j / CELL;
+}
+
+// Update which values in each row, column, and square have been solved
+// Set bit indicates value exists in region
+static void update_solved(const uint16_t cells[ROW][ROW], uint16_t row[ROW], uint16_t col[ROW], uint16_t sqr[ROW]) {
+  for (int i = 0; i < ROW; i++) {
+    for (int j = 0; j < ROW; j++) {
+      uint16_t c = cells[i][j];
+      // if only one number is in bitvector (power of 2), mark it as found
+      if (!(c & (c - 1))) {
+	row[i] |= c;
+	col[j] |= c;
+	sqr[sqr_index(i, j)] |= c;
+      }
+    }
+  }
 }
 
 // Check if board is solved - each row/column/square is solved
@@ -28,18 +45,7 @@ int is_solved(const uint16_t cells[ROW][ROW]) {
   memset(&col, 0, ROW * sizeof(uint16_t));
   memset(&sqr, 0, ROW * sizeof(uint16_t));
 
-  for (int i = 0; i < ROW; i++) {
-    for (int j = 0; j < ROW; j++) {
-      uint16_t c = cells[i][j];
-      if (c && !(c & (c - 1))) {
-	row[i] |= c;
-	col[j] |= c;
-	// square index is i rounded down to nearest multiple of cell size
-	// plus j divided by cell size
-	sqr[sqr_index(i, j)] |= c;
-      }
-    }
-  }
+  update_solved(cells, row, col, sqr);
 
   uint16_t target = (1 << ROW) - 1;
   for (int i = 0; i < ROW; i++) {
@@ -102,17 +108,7 @@ int main(int argc, char **argv) {
   memset(&colfin, 0, ROW * sizeof(uint16_t));
   memset(&sqrfin, 0, ROW * sizeof(uint16_t));
 
-  for (int i = 0; i < ROW; i++) {
-    for (int j = 0; j < ROW; j++) {
-      uint16_t c = cells[i][j];
-      // if only one number is in bitvector (power of 2), mark it as found
-      if (!(c & (c - 1))) {
-	rowfin[i] |= c;
-	colfin[j] |= c;
-	sqrfin[sqr_index(i, j)] |= c;
-      }
-    }
-  }
+  update_solved(cells, rowfin, colfin, sqrfin);
 
   for (int i = 0; i < ROW; i++) {
     for (int j = 0; j < ROW; j++) {
