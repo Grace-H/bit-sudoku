@@ -36,17 +36,7 @@ static void update_solved(const uint16_t cells[ROW][ROW], uint16_t row[ROW], uin
 
 // Check if board is solved - each row/column/square is solved
 // if the xor of all cells is 0x1ff (1 bit set)
-int is_solved(const uint16_t cells[ROW][ROW]) {
-  uint16_t row[ROW];
-  uint16_t col[ROW];
-  uint16_t sqr[ROW];
-
-  memset(&row, 0, ROW * sizeof(uint16_t));
-  memset(&col, 0, ROW * sizeof(uint16_t));
-  memset(&sqr, 0, ROW * sizeof(uint16_t));
-
-  update_solved(cells, row, col, sqr);
-
+int is_solved(uint16_t row[ROW], uint16_t col[ROW], uint16_t sqr[ROW]) {
   uint16_t target = (1 << ROW) - 1;
   for (int i = 0; i < ROW; i++) {
     if (row[i] != target || col[i] != target || sqr[i] != target) {
@@ -121,7 +111,9 @@ int main(int argc, char **argv) {
     }
   }
 
-  if (is_solved(cells))
+  update_solved(cells, rowfin, colfin, sqrfin);
+
+  if (is_solved(rowfin, colfin, sqrfin))
     printf("Solved\n");
   else
     printf("Not solved\n");
