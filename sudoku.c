@@ -116,6 +116,59 @@ static void eliminate(uint16_t cells[ROW][ROW], const uint16_t row[ROW],
   }
 }
 
+// Use naked pairs strategy to eliminate further options
+// Naked pair: two cells in same group that have only two identical possibilities
+static void naked_pairs(uint16_t cells[ROW][ROW]) {
+
+  for (int i = 0; i < ROW; i++) {
+    for (int j = 0; j < ROW; j++) {
+      if (bit_count(cells[i][j]) == 2) {
+	// Check for pairs in remainder of row, eliminating possibiliities
+	// from row if so
+	for (int k = j + 1; k < ROW; k++) {
+	  // same pair
+	  if (cells[i][j] == cells[i][k]) {
+	    for (int x = 0; x < ROW; x++) {
+	      if (x != j && x != k) {
+		cells[i][x] &= ~cells[i][j];
+	      }
+	    }
+	    break; // there won't (shouldn't) be another pair
+	  }
+	}
+
+	// Column
+	for (int k = i + 1; k < ROW; k++) {
+	  if (cells[i][j] == cells[k][j]) {
+	    for (int y = 0; y < ROW; y++) {
+	      if (y != i && y != k) {
+		cells[y][j] &= ~cells[i][j];
+	      }
+	    }
+	    break;
+	  }
+	}
+
+	// Square
+	for (int k = (i / CELL) * CELL; k < (i / CELL + 1) * CELL; k++) {
+	  for (int l = (j / CELL) * CELL; l < (j / CELL + 1) * CELL; l++) {
+	    if ((i != k && j != l) && cells[i][j] == cells[k][l]) {
+	      for (int z1 = (i / CELL) * CELL; z1 < ((i + 1) / CELL) * CELL; z1++) {
+		for (int z2 = (j / CELL) * CELL; z2 < ((i + 1) / CELL) * CELL; z2++) {
+		  if (cells[i][j] != cells[z1][z2]) {
+		    cells[z1][z2] &= ~cells[i][j];
+		  }
+		}
+	      }
+	      break;
+	    }
+	  }
+	}
+      }
+    }
+  }
+}
+
 int main(int argc, char **argv) {
 
   if (argc != 2) {
@@ -173,6 +226,12 @@ int main(int argc, char **argv) {
   for (int i = 0; i < 20; i++) {
     // Do one round of elimination
     eliminate(cells, rowfin, colfin, sqrfin);
+    char buf[ROW * ROW + ROW];
+    cells_str(cells, buf, ROW * ROW + ROW);
+    LOG("cells after eliminate round %d\n%s", i, buf);
+    naked_pairs(cells);
+    cells_str(cells, buf, ROW * ROW + ROW);
+    LOG("cells after naked pairs \n%s", buf);
     update_solved(cells, rowfin, colfin, sqrfin);
 
     if (is_solved(rowfin, colfin, sqrfin)) {
@@ -183,5 +242,5 @@ int main(int argc, char **argv) {
 
   printf("Not solved\n");
 
-  return 0;
+  return 1;
 }
