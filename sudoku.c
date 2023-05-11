@@ -58,7 +58,8 @@ static int bit_count(uint16_t n) {
 
 // Update which values in each row, column, and square have been solved
 // Set bit indicates value exists in region
-static void update_solved(const uint16_t cells[ROW][ROW], uint16_t row[ROW], uint16_t col[ROW], uint16_t sqr[ROW]) {
+static void update_solved(const uint16_t cells[ROW][ROW], uint16_t row[ROW],
+			  uint16_t col[ROW], uint16_t sqr[ROW]) {
   for (int i = 0; i < ROW; i++) {
     for (int j = 0; j < ROW; j++) {
       uint16_t c = cells[i][j];
@@ -86,7 +87,8 @@ int is_solved(uint16_t row[ROW], uint16_t col[ROW], uint16_t sqr[ROW]) {
 
 // Eliminate possibilites for each cell based on what values are already
 // in each row/column/square
-static void eliminate(uint16_t cells[ROW][ROW], const uint16_t row[ROW], const uint16_t col[ROW], const uint16_t sqr[ROW]) {
+static void eliminate(uint16_t cells[ROW][ROW], const uint16_t row[ROW],
+		      const uint16_t col[ROW], const uint16_t sqr[ROW]) {
   for (int i = 0; i < ROW; i++) {
     for (int j = 0; j < ROW; j++) {
       // if this cell is not solved, cross off possibilities
