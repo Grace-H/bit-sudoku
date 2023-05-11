@@ -48,12 +48,27 @@ static inline int sqr_index(int i, int j) {
 }
 
 // Count number of set bits in vector of length ROW
-static int bit_count(uint16_t n) {
+static int bit_count(const uint16_t n) {
   int count = 0;
   for (int i = 0; i < ROW; i++) {
     count += (n >> i) & 1;
   }
   return count;
+}
+
+static int vec_str(const uint16_t vec, char *buf, int n) {
+  if (n < ROW + 1) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  int i;
+  for (i = 0; i < ROW; i++) {
+    buf[i] = ((vec >> (ROW - i - 1)) & 1) + '0';
+  }
+
+  buf[i] = '\0';
+  return i;
 }
 
 // Update which values in each row, column, and square have been solved
