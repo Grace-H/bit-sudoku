@@ -18,6 +18,15 @@ static inline int sqr_index(int i, int j) {
   return (i / CELL) * CELL + j / CELL;
 }
 
+// Count number of set bits in vector of length ROW
+static int bit_count(uint16_t n) {
+  int count = 0;
+  for (int i = 0; i < ROW; i++) {
+    count += (n >> i) & 1;
+  }
+  return count;
+}
+
 // Update which values in each row, column, and square have been solved
 // Set bit indicates value exists in region
 static void update_solved(const uint16_t cells[ROW][ROW], uint16_t row[ROW], uint16_t col[ROW], uint16_t sqr[ROW]) {
