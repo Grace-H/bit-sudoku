@@ -10,7 +10,7 @@
 
 #define ROW 9
 #define CELL 3
-#define LOG(format, ...) fprintf(stderr, "%s(%d):\t" format "\n",	\
+#define LOG(format, ...) fprintf(stderr, "%s(%d):\t" format "\n",       \
 				 __func__, __LINE__, ##__VA_ARGS__)
 
 static int cells_str(const uint16_t cells[ROW][ROW], char *buf, int n) {
@@ -24,16 +24,16 @@ static int cells_str(const uint16_t cells[ROW][ROW], char *buf, int n) {
   for (int i = 0; i < ROW; i++) {
     for (int j = 0; j < ROW + 1; j++) {
       if (j == ROW) {
-	buf[k++] = '\n';
+        buf[k++] = '\n';
       }
       else if (!(cells[i][j] & (cells[i][j] - 1))) {
-	int x = 1;
-	while (cells[i][j] >> x != 0)
-	  x++;
-	buf[k++] = x + '0';
+        int x = 1;
+        while (cells[i][j] >> x != 0)
+          x++;
+        buf[k++] = x + '0';
       }
       else {
-	buf[k++] = '0';
+        buf[k++] = '0';
       }
     }
   }
@@ -80,9 +80,9 @@ static void update_solved(const uint16_t cells[ROW][ROW], uint16_t row[ROW],
       uint16_t c = cells[i][j];
       // if only one number is in bitvector (power of 2), mark it as found
       if (!(c & (c - 1))) {
-	row[i] |= c;
-	col[j] |= c;
-	sqr[sqr_index(i, j)] |= c;
+        row[i] |= c;
+        col[j] |= c;
+        sqr[sqr_index(i, j)] |= c;
       }
     }
   }
@@ -108,9 +108,9 @@ static void eliminate(uint16_t cells[ROW][ROW], const uint16_t row[ROW],
     for (int j = 0; j < ROW; j++) {
       // if this cell is not solved, cross off possibilities
       if(cells[i][j] & (cells[i][j] - 1)) {
-	cells[i][j] &= ~row[i];
-	cells[i][j] &= ~col[j];
-	cells[i][j] &= ~sqr[sqr_index(i, j)];
+        cells[i][j] &= ~row[i];
+        cells[i][j] &= ~col[j];
+        cells[i][j] &= ~sqr[sqr_index(i, j)];
       }
     }
   }
@@ -123,47 +123,47 @@ static void naked_pairs(uint16_t cells[ROW][ROW]) {
   for (int i = 0; i < ROW; i++) {
     for (int j = 0; j < ROW; j++) {
       if (bit_count(cells[i][j]) == 2) {
-	// Check for pairs in remainder of row, eliminating possibiliities
-	// from row if so
-	for (int k = j + 1; k < ROW; k++) {
-	  // same pair
-	  if (cells[i][j] == cells[i][k]) {
-	    for (int x = 0; x < ROW; x++) {
-	      if (x != j && x != k) {
-		cells[i][x] &= ~cells[i][j];
-	      }
-	    }
-	    break; // there won't (shouldn't) be another pair
-	  }
-	}
+        // Check for pairs in remainder of row, eliminating possibiliities
+        // from row if so
+        for (int k = j + 1; k < ROW; k++) {
+          // same pair
+          if (cells[i][j] == cells[i][k]) {
+            for (int x = 0; x < ROW; x++) {
+              if (x != j && x != k) {
+                cells[i][x] &= ~cells[i][j];
+              }
+            }
+            break; // there won't (shouldn't) be another pair
+          }
+        }
 
-	// Column
-	for (int k = i + 1; k < ROW; k++) {
-	  if (cells[i][j] == cells[k][j]) {
-	    for (int y = 0; y < ROW; y++) {
-	      if (y != i && y != k) {
-		cells[y][j] &= ~cells[i][j];
-	      }
-	    }
-	    break;
-	  }
-	}
+        // Column
+        for (int k = i + 1; k < ROW; k++) {
+          if (cells[i][j] == cells[k][j]) {
+            for (int y = 0; y < ROW; y++) {
+              if (y != i && y != k) {
+                cells[y][j] &= ~cells[i][j];
+              }
+            }
+            break;
+          }
+        }
 
-	// Square
-	for (int k = (i / CELL) * CELL; k < (i / CELL + 1) * CELL; k++) {
-	  for (int l = (j / CELL) * CELL; l < (j / CELL + 1) * CELL; l++) {
-	    if ((i != k && j != l) && cells[i][j] == cells[k][l]) {
-	      for (int z1 = (i / CELL) * CELL; z1 < ((i + 1) / CELL) * CELL; z1++) {
-		for (int z2 = (j / CELL) * CELL; z2 < ((i + 1) / CELL) * CELL; z2++) {
-		  if (cells[i][j] != cells[z1][z2]) {
-		    cells[z1][z2] &= ~cells[i][j];
-		  }
-		}
-	      }
-	      break;
-	    }
-	  }
-	}
+        // Square
+        for (int k = (i / CELL) * CELL; k < (i / CELL + 1) * CELL; k++) {
+          for (int l = (j / CELL) * CELL; l < (j / CELL + 1) * CELL; l++) {
+            if ((i != k && j != l) && cells[i][j] == cells[k][l]) {
+              for (int z1 = (i / CELL) * CELL; z1 < ((i + 1) / CELL) * CELL; z1++) {
+                for (int z2 = (j / CELL) * CELL; z2 < ((i + 1) / CELL) * CELL; z2++) {
+                  if (cells[i][j] != cells[z1][z2]) {
+                    cells[z1][z2] &= ~cells[i][j];
+                  }
+                }
+              }
+              break;
+            }
+          }
+        }
       }
     }
   }
@@ -201,13 +201,13 @@ int main(int argc, char **argv) {
 
     for (int j = 0; j < ROW; j++) {
       if (buf[j] != '0') {
-	char d = buf[j];
-	if (d >= '1' && d <= '9') {
-	  cells[i][j] = 1 << (d - '1');
-	} else {
-	  fprintf(stderr, "Invalid digit: %d\n", d);
-	  return 1;
-	}
+        char d = buf[j];
+        if (d >= '1' && d <= '9') {
+          cells[i][j] = 1 << (d - '1');
+        } else {
+          fprintf(stderr, "Invalid digit: %d\n", d);
+          return 1;
+        }
       }
     }
   }
