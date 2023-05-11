@@ -6,11 +6,40 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <errno.h>
 
 #define ROW 9
 #define CELL 3
 #define LOG(format, ...) fprintf(stderr, "%s(%d):\t" format "\n",	\
 				 __func__, __LINE__, ##__VA_ARGS__)
+
+static int cells_str(const uint16_t cells[ROW][ROW], char *buf, int n) {
+  if (n < (ROW + 1) * ROW) {
+    LOG("too short");
+    errno = EINVAL;
+    return -1;
+  }
+
+  int k = 0;
+  for (int i = 0; i < ROW; i++) {
+    for (int j = 0; j < ROW + 1; j++) {
+      if (j == ROW) {
+	buf[k++] = '\n';
+      }
+      else if (!(cells[i][j] & (cells[i][j] - 1))) {
+	int x = 1;
+	while (cells[i][j] >> x != 0)
+	  x++;
+	buf[k++] = x + '0';
+      }
+      else {
+	buf[k++] = '0';
+      }
+    }
+  }
+  buf[k] = '\0';
+  return k;
+}
 
 // Get square number (0->9 reading left-right top-bottom) from i,j coordinates
 // Square index is i rounded down to nearest multiple of cell size + j divided by cell size
