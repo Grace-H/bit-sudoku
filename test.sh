@@ -7,9 +7,9 @@ for file in $1/*
 do
     ((total++))
     if ./sudoku $file &> /dev/null; then
-	((pass++))
+        ((pass++))
     else
-	echo "Test failed: $file"
+        echo "Test failed: $file"
     fi
 done
 
