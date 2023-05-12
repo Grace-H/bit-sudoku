@@ -156,11 +156,13 @@ static void naked_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
         }
 
         // Square
-        for (int k = (i / CELL) * CELL; k < (i / CELL + 1) * CELL; k++) {
-          for (int l = (j / CELL) * CELL; l < (j / CELL + 1) * CELL; l++) {
+	int a, b;
+	sqr_coords(sqr_index(i, j), &a, &b);
+        for (int k = a; k < a + CELL; k++) {
+          for (int l = b; l < b + CELL; l++) {
             if ((i != k && j != l) && cells[i][j] == cells[k][l]) {
-              for (int z1 = (i / CELL) * CELL; z1 < ((i + 1) / CELL) * CELL; z1++) {
-                for (int z2 = (j / CELL) * CELL; z2 < ((i + 1) / CELL) * CELL; z2++) {
+              for (int z1 = a; z1 < a + CELL; z1++) {
+                for (int z2 = b; z2 < b + CELL; z2++) {
                   if (cells[i][j] != cells[z1][z2]) {
                     cells[z1][z2] &= ~cells[i][j];
                   }
