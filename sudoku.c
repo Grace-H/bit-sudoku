@@ -13,7 +13,7 @@
 #define LOG(format, ...) fprintf(stderr, "%s(%d):\t" format "\n",       \
 				 __func__, __LINE__, ##__VA_ARGS__)
 
-static int cells_str(const uint16_t cells[GRP_SZ][GRP_SZ], char *buf, int n) {
+static int cells_str(uint16_t cells[GRP_SZ][GRP_SZ], char *buf, int n) {
   if (n < (GRP_SZ + 1) * GRP_SZ) {
     LOG("too short");
     errno = EINVAL;
@@ -357,7 +357,7 @@ int main(int argc, char **argv) {
   memset(&colfin, 0, GRP_SZ * sizeof(uint16_t));
   memset(&sqrfin, 0, GRP_SZ * sizeof(uint16_t));
 
-  update_solved(cells, rowfin, colfin, sqrfin);
+  update_solved((const uint16_t(*)[GRP_SZ]) cells, rowfin, colfin, sqrfin);
 
   for (int i = 0; i < 40; i++) {
     // Do one round of elimination
@@ -369,7 +369,7 @@ int main(int argc, char **argv) {
     hidden_pairs(cells);
     cells_str(cells, buf, GRP_SZ * GRP_SZ + GRP_SZ);
     LOG("cells after hiden pairs \n%s", buf);
-    update_solved(cells, rowfin, colfin, sqrfin);
+    update_solved((const uint16_t(*)[GRP_SZ]) cells, rowfin, colfin, sqrfin);
 
     if (is_solved(rowfin, colfin, sqrfin)) {
       printf("Solved in %d iterations\n", i);
