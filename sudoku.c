@@ -122,6 +122,103 @@ static void eliminate(uint16_t cells[GRP_SZ][GRP_SZ], const uint16_t row[GRP_SZ]
   }
 }
 
+static void singles(uint16_t cells[GRP_SZ][GRP_SZ]) {
+  // Look for hidden singles in each row
+  for (int i = 0; i < GRP_SZ; i++) {
+    int opts_count[GRP_SZ];
+    for (int x = 0; x < GRP_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+    for (int j = 0; j < GRP_SZ; j++) {
+      for (int k = 0; k < GRP_SZ; k++) {
+        opts_count[k] += (cells[i][j] >> k) & 1;
+      }
+    }
+
+    uint16_t singles = 0;
+    for (int k = 0; k < GRP_SZ; k++) {
+      if (opts_count[k] == 1) {
+        singles |= 1 << k;
+      }
+    }
+
+    // Find cells that have one of the hidden singles
+    for (int j = 0; j < GRP_SZ; j++) {
+      if (cells[i][j] & singles) {
+        cells[i][j] &= singles;
+        singles ^= cells[i][j]; // Cross off as safeguard
+      }
+    }
+  }
+
+  // Column
+  for (int j = 0; j < GRP_SZ; j++) {
+    // Count number of cells that can hold each number
+    int opts_count[GRP_SZ];
+    for (int x = 0; x < GRP_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+   for (int i = 0; i < GRP_SZ; i++) {
+      for (int k = 0; k < GRP_SZ; k++) {
+        opts_count[k] += (cells[i][j] >> k) & 1;
+      }
+    }
+
+    // Create bitvector of numbers with only one possibility
+    uint16_t singles = 0;
+    for (int k = 0; k < GRP_SZ; k++) {
+      if (opts_count[k] == 1) {
+        singles |= 1 << k;
+      }
+    }
+
+    // Find cells that have one of the hidden singles
+    for (int i = 0; i < GRP_SZ; i++) {
+      if (cells[i][j] & singles) {
+        cells[i][j] &= singles;
+        singles ^= cells[i][j]; // Cross off as safeguard
+      }
+    }
+  }
+
+  // Square
+  for (int z = 0; z < GRP_SZ; z++) {
+    int opts_count[GRP_SZ];
+    for (int x = 0; x < GRP_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+    int z1, z2;
+    sqr_coords(z, &z1, &z2);
+    for (int i = z1; i < z1 + CELL; i++) {
+      for (int j = z2; j < z2 + CELL; j++) {
+        for (int k = 0; k < GRP_SZ; k++) {
+          opts_count[k] += (cells[i][j] >> k) & 1;
+        }
+      }
+    }
+
+    uint16_t singles = 0;
+    for (int k = 0; k < GRP_SZ; k++) {
+      if (opts_count[k] == 1) {
+        singles |= 1 << k;
+      }
+    }
+
+    // Find cells that have one of the hidden singles
+    for (int i = z1; i < z1 + CELL; i++) {
+      for (int j = z2; j < z2 + CELL; j++) {
+        if (cells[i][j] & singles) {
+          cells[i][j] &= singles;
+          singles ^= cells[i][j]; // Cross off as safeguard
+        }
+      }
+    }
+  }
+}
+
 // Use naked pairs strategy to eliminate further options
 // Naked pair: two cells in same group that have only two identical possibilities
 static void naked_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
@@ -365,10 +462,11 @@ int main(int argc, char **argv) {
     char buf[GRP_SZ * GRP_SZ + GRP_SZ];
     cells_str(cells, buf, GRP_SZ * GRP_SZ + GRP_SZ);
     LOG("cells after eliminate round %d\n%s", i, buf);
-    naked_pairs(cells);
-    hidden_pairs(cells);
+//    naked_pairs(cells);
+ //   hidden_pairs(cells);
+    singles(cells);
     cells_str(cells, buf, GRP_SZ * GRP_SZ + GRP_SZ);
-    LOG("cells after hiden pairs \n%s", buf);
+    LOG("cells after singles\n%s", buf);
     update_solved((const uint16_t(*)[GRP_SZ]) cells, rowfin, colfin, sqrfin);
 
     if (is_solved(rowfin, colfin, sqrfin)) {
