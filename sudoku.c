@@ -11,7 +11,7 @@
 #define GRP_SZ 9
 #define CELL 3
 #define LOG(format, ...) fprintf(stderr, "%s(%d):\t" format "\n",       \
-				 __func__, __LINE__, ##__VA_ARGS__)
+                          __func__, __LINE__, ##__VA_ARGS__)
 
 static int cells_str(uint16_t cells[GRP_SZ][GRP_SZ], char *buf, int n) {
   if (n < (GRP_SZ + 1) * GRP_SZ) {
@@ -80,7 +80,7 @@ static int bit_count(const uint16_t n) {
 // Update which values in each row, column, and square have been solved
 // Set bit indicates value exists in region
 static void update_solved(const uint16_t cells[GRP_SZ][GRP_SZ], uint16_t row[GRP_SZ],
-			  uint16_t col[GRP_SZ], uint16_t sqr[GRP_SZ]) {
+                          uint16_t col[GRP_SZ], uint16_t sqr[GRP_SZ]) {
   for (int i = 0; i < GRP_SZ; i++) {
     for (int j = 0; j < GRP_SZ; j++) {
       uint16_t c = cells[i][j];
@@ -109,7 +109,7 @@ int is_solved(uint16_t row[GRP_SZ], uint16_t col[GRP_SZ], uint16_t sqr[GRP_SZ]) 
 // Eliminate possibilites for each cell based on what values are already
 // in each row/column/square
 static void eliminate(uint16_t cells[GRP_SZ][GRP_SZ], const uint16_t row[GRP_SZ],
-		      const uint16_t col[GRP_SZ], const uint16_t sqr[GRP_SZ]) {
+                      const uint16_t col[GRP_SZ], const uint16_t sqr[GRP_SZ]) {
   for (int i = 0; i < GRP_SZ; i++) {
     for (int j = 0; j < GRP_SZ; j++) {
       // if this cell is not solved, cross off possibilities
@@ -160,7 +160,7 @@ static void singles(uint16_t cells[GRP_SZ][GRP_SZ]) {
       opts_count[x] = 0;
     }
 
-   for (int i = 0; i < GRP_SZ; i++) {
+    for (int i = 0; i < GRP_SZ; i++) {
       for (int k = 0; k < GRP_SZ; k++) {
         opts_count[k] += (cells[i][j] >> k) & 1;
       }
@@ -222,7 +222,6 @@ static void singles(uint16_t cells[GRP_SZ][GRP_SZ]) {
 // Use naked pairs strategy to eliminate further options
 // Naked pair: two cells in same group that have only two identical possibilities
 static void naked_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
-
   for (int i = 0; i < GRP_SZ; i++) {
     for (int j = 0; j < GRP_SZ; j++) {
       if (bit_count(cells[i][j]) == 2) {
@@ -253,8 +252,8 @@ static void naked_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
         }
 
         // Square
-	int a, b;
-	sqr_coords(sqr_index(i, j), &a, &b);
+        int a, b;
+        sqr_coords(sqr_index(i, j), &a, &b);
         for (int k = a; k < a + CELL; k++) {
           for (int l = b; l < b + CELL; l++) {
             if ((i != k && j != l) && cells[i][j] == cells[k][l]) {
@@ -302,7 +301,7 @@ static void hidden_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
         for (int x = j + 1; x < GRP_SZ; x++) {
           if (inter == (cells[i][x] & pairs)) {
             cells[i][j] = inter;
-	    cells[i][x] = inter;
+            cells[i][x] = inter;
             for (int k = 0; k < GRP_SZ; k++) {
               if (k != j && k != x) {
                 cells[i][x] &= ~cells[i][j];
@@ -340,7 +339,7 @@ static void hidden_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
         for (int y = i + 1; y < GRP_SZ; y++) {
           if (inter == (cells[y][j] & pairs)) {
             cells[i][j] = inter;
-	    cells[y][j] = inter;
+            cells[y][j] = inter;
             for (int k = 0; k < GRP_SZ; k++) {
               if (k != i && k != y) {
                 cells[k][j] &= ~cells[i][j];
@@ -384,7 +383,7 @@ static void hidden_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
             for (int y = z2; y < z2 + CELL; y++) {
               if ((i != x) && (j != y) && inter == (cells[x][y] & pairs)) {
                 cells[i][j] = inter;
-		cells[x][y] = inter;
+                cells[x][y] = inter;
                 for (int a = z1; a < z1 + CELL; a++) {
                   for (int b = z2; b < z2 + CELL; b++) {
                     if ((a != i && b != j) && (a != x && b != y)) {
@@ -462,8 +461,8 @@ int main(int argc, char **argv) {
     char buf[GRP_SZ * GRP_SZ + GRP_SZ];
     cells_str(cells, buf, GRP_SZ * GRP_SZ + GRP_SZ);
     LOG("cells after eliminate round %d\n%s", i, buf);
-//    naked_pairs(cells);
- //   hidden_pairs(cells);
+    //    naked_pairs(cells);
+    //   hidden_pairs(cells);
     singles(cells);
     cells_str(cells, buf, GRP_SZ * GRP_SZ + GRP_SZ);
     LOG("cells after singles\n%s", buf);
