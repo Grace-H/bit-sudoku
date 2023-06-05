@@ -280,6 +280,10 @@ static void hidden_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
   for (int i = 0; i < GRP_SZ; i++) {
     // Count number of cells that can hold each number
     int opts_count[GRP_SZ];
+    for (int x = 0; x < GRP_SZ; x++) {
+	    opts_count[x] = 0;
+    }
+
     for (int j = 0; j < GRP_SZ; j++) {
       for (int k = 0; k < GRP_SZ; k++) {
         opts_count[k] += (cells[i][j] >> k) & 1;
@@ -318,6 +322,10 @@ static void hidden_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
   for (int j = 0; j < GRP_SZ; j++) {
     // Count number of cells that can hold each number
     int opts_count[GRP_SZ];
+    for (int x = 0; x < GRP_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
     for (int i = 0; i < GRP_SZ; i++) {
       for (int k = 0; k < GRP_SZ; k++) {
         opts_count[k] += (cells[i][j] >> k) & 1;
@@ -356,6 +364,10 @@ static void hidden_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
   for (int z = 0; z < GRP_SZ; z++) {
     // Count number of cells that can hold each number
     int opts_count[GRP_SZ];
+    for (int x = 0; x < GRP_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
     int z1, z2;
     sqr_coords(z, &z1, &z2);
     for (int i = z1; i < z1 + CELL; i++) {
