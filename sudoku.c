@@ -11,7 +11,7 @@
 #define GRP_SZ 9
 #define CELL 3
 #define LOG(format, ...) fprintf(stderr, "%s(%d):\t" format "\n",       \
-                          __func__, __LINE__, ##__VA_ARGS__)
+    __func__, __LINE__, ##__VA_ARGS__)
 
 static int cells_str(uint16_t cells[GRP_SZ][GRP_SZ], char *buf, int n) {
   if (n < (GRP_SZ + 1) * GRP_SZ) {
@@ -80,7 +80,7 @@ static int bit_count(const uint16_t n) {
 // Update which values in each row, column, and square have been solved
 // Set bit indicates value exists in region
 static void update_solved(const uint16_t cells[GRP_SZ][GRP_SZ], uint16_t row[GRP_SZ],
-                          uint16_t col[GRP_SZ], uint16_t sqr[GRP_SZ]) {
+    uint16_t col[GRP_SZ], uint16_t sqr[GRP_SZ]) {
   for (int i = 0; i < GRP_SZ; i++) {
     for (int j = 0; j < GRP_SZ; j++) {
       uint16_t c = cells[i][j];
@@ -109,7 +109,7 @@ int is_solved(uint16_t row[GRP_SZ], uint16_t col[GRP_SZ], uint16_t sqr[GRP_SZ]) 
 // Eliminate possibilites for each cell based on what values are already
 // in each row/column/square
 static void eliminate(uint16_t cells[GRP_SZ][GRP_SZ], const uint16_t row[GRP_SZ],
-                      const uint16_t col[GRP_SZ], const uint16_t sqr[GRP_SZ]) {
+    const uint16_t col[GRP_SZ], const uint16_t sqr[GRP_SZ]) {
   for (int i = 0; i < GRP_SZ; i++) {
     for (int j = 0; j < GRP_SZ; j++) {
       // if this cell is not solved, cross off possibilities
@@ -281,7 +281,7 @@ static void hidden_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
     // Count number of cells that can hold each number
     int opts_count[GRP_SZ];
     for (int x = 0; x < GRP_SZ; x++) {
-	    opts_count[x] = 0;
+      opts_count[x] = 0;
     }
 
     for (int j = 0; j < GRP_SZ; j++) {
@@ -298,119 +298,131 @@ static void hidden_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
       }
     }
 
-    // Find pairs of cells that share two of the possibilities
-    for (int j = 0; j < GRP_SZ; j++) {
-      uint16_t inter = cells[i][j] & pairs;
-      if (bit_count(inter) == 2) {
-        for (int x = j + 1; x < GRP_SZ; x++) {
-          if (inter == (cells[i][x] & pairs)) {
-            cells[i][j] = inter;
-            cells[i][x] = inter;
-            for (int k = 0; k < GRP_SZ; k++) {
-              if (k != j && k != x) {
-                cells[i][x] &= ~cells[i][j];
-              }
-            }
-            pairs &= ~inter;
-          }
-        }
-      }
-    }
-  }
-
-  // Column
-  for (int j = 0; j < GRP_SZ; j++) {
-    // Count number of cells that can hold each number
-    int opts_count[GRP_SZ];
-    for (int x = 0; x < GRP_SZ; x++) {
-      opts_count[x] = 0;
-    }
-
-    for (int i = 0; i < GRP_SZ; i++) {
-      for (int k = 0; k < GRP_SZ; k++) {
-        opts_count[k] += (cells[i][j] >> k) & 1;
-      }
-    }
-
-    // Make bitvector of numbers that can only go in two cells
-    uint16_t pairs = 0;
-    for (int k = 0; k < GRP_SZ; k++) {
-      if (opts_count[k] == 2) {
-        pairs |= 1 << k;
-      }
-    }
-
-    // Find pairs of cells that share two of the possibilities
-    for (int i = 0; i < GRP_SZ; i++) {
-      uint16_t inter = cells[i][j] & pairs;
-      if (bit_count(inter) == 2) {
-        for (int y = i + 1; y < GRP_SZ; y++) {
-          if (inter == (cells[y][j] & pairs)) {
-            cells[i][j] = inter;
-            cells[y][j] = inter;
-            for (int k = 0; k < GRP_SZ; k++) {
-              if (k != i && k != y) {
-                cells[k][j] &= ~cells[i][j];
-              }
-            }
-            pairs &= ~inter;
-          }
-        }
-      }
-    }
-  }
-
-  // Square
-  for (int z = 0; z < GRP_SZ; z++) {
-    // Count number of cells that can hold each number
-    int opts_count[GRP_SZ];
-    for (int x = 0; x < GRP_SZ; x++) {
-      opts_count[x] = 0;
-    }
-
-    int z1, z2;
-    sqr_coords(z, &z1, &z2);
-    for (int i = z1; i < z1 + CELL; i++) {
-      for (int j = z2; j < z2 + CELL; j++) {
-        for (int k = 0; k < GRP_SZ; k++) {
-          opts_count[k] += (cells[i][j] >> k) & 1;
-        }
-      }
-    }
-
-    // Make bitvector of numbers that can only go in two cells
-    uint16_t pairs = 0;
-    for (int k = 0; k < GRP_SZ; k++) {
-      if (opts_count[k] == 2) {
-        pairs |= 1 << k;
-      }
-    }
-
-    // Find pairs of cells that share two of the possibilities
-    for (int i = z1; i < z1 + CELL; i++) {
-      for (int j = z2; j < z2 + CELL; j++) {
+    if(bit_count(pairs) >= 2) {
+      char buf[16];
+      vec_str(pairs, buf, 16);
+      printf("pairs in row: %s\n", buf);
+      // Find pairs of cells that share two of the possibilities
+      for (int j = 0; j < GRP_SZ; j++) {
         uint16_t inter = cells[i][j] & pairs;
         if (bit_count(inter) == 2) {
-          for (int x = z1; x < z1 + CELL; x++) {
-            for (int y = z2; y < z2 + CELL; y++) {
-              if ((i != x) && (j != y) && inter == (cells[x][y] & pairs)) {
-                cells[i][j] = inter;
-                cells[x][y] = inter;
-                for (int a = z1; a < z1 + CELL; a++) {
-                  for (int b = z2; b < z2 + CELL; b++) {
-                    if ((a != i && b != j) && (a != x && b != y)) {
-                      cells[a][b] &= ~cells[i][j];
-                    }
-                  }
+          vec_str(inter, buf, 16);
+          printf("cell %d,%d with pair found: %s\n", i,j,buf);
+          for (int x = j + 1; x < GRP_SZ; x++) {
+            if (inter == (cells[i][x] & pairs)) {
+              LOG("hidden pair found %d,%d!\n", i,x);
+
+              char buf[GRP_SZ * GRP_SZ + GRP_SZ];
+              cells_str(cells, buf, GRP_SZ * GRP_SZ + GRP_SZ);
+              LOG("%s\n", buf);
+              cells[i][j] = inter;
+              cells[i][x] = inter;
+              for (int k = 0; k < GRP_SZ; k++) {
+                if (k != j && k != x) {
+                  cells[i][k] &= ~cells[i][j];
                 }
-                pairs &= ~inter;
               }
+              pairs &= ~inter;
             }
           }
         }
       }
     }
   }
+  /*
+  // Column
+  for (int j = 0; j < GRP_SZ; j++) {
+// Count number of cells that can hold each number
+int opts_count[GRP_SZ];
+for (int x = 0; x < GRP_SZ; x++) {
+opts_count[x] = 0;
+}
+
+for (int i = 0; i < GRP_SZ; i++) {
+for (int k = 0; k < GRP_SZ; k++) {
+opts_count[k] += (cells[i][j] >> k) & 1;
+}
+}
+
+// Make bitvector of numbers that can only go in two cells
+uint16_t pairs = 0;
+for (int k = 0; k < GRP_SZ; k++) {
+if (opts_count[k] == 2) {
+pairs |= 1 << k;
+}
+}
+
+// Find pairs of cells that share two of the possibilities
+for (int i = 0; i < GRP_SZ; i++) {
+uint16_t inter = cells[i][j] & pairs;
+if (bit_count(inter) == 2) {
+for (int y = i + 1; y < GRP_SZ; y++) {
+if (inter == (cells[y][j] & pairs)) {
+cells[i][j] = inter;
+cells[y][j] = inter;
+for (int k = 0; k < GRP_SZ; k++) {
+if (k != i && k != y) {
+cells[k][j] &= ~cells[i][j];
+}
+}
+pairs &= ~inter;
+}
+}
+}
+}
+}
+
+// Square
+for (int z = 0; z < GRP_SZ; z++) {
+// Count number of cells that can hold each number
+int opts_count[GRP_SZ];
+for (int x = 0; x < GRP_SZ; x++) {
+opts_count[x] = 0;
+}
+
+int z1, z2;
+sqr_coords(z, &z1, &z2);
+for (int i = z1; i < z1 + CELL; i++) {
+for (int j = z2; j < z2 + CELL; j++) {
+for (int k = 0; k < GRP_SZ; k++) {
+opts_count[k] += (cells[i][j] >> k) & 1;
+}
+}
+}
+
+// Make bitvector of numbers that can only go in two cells
+uint16_t pairs = 0;
+for (int k = 0; k < GRP_SZ; k++) {
+if (opts_count[k] == 2) {
+pairs |= 1 << k;
+}
+}
+
+// Find pairs of cells that share two of the possibilities
+for (int i = z1; i < z1 + CELL; i++) {
+for (int j = z2; j < z2 + CELL; j++) {
+  uint16_t inter = cells[i][j] & pairs;
+  if (bit_count(inter) == 2) {
+    for (int x = z1; x < z1 + CELL; x++) {
+      for (int y = z2; y < z2 + CELL; y++) {
+        if ((i != x) && (j != y) && inter == (cells[x][y] & pairs)) {
+          cells[i][j] = inter;
+          cells[x][y] = inter;
+          for (int a = z1; a < z1 + CELL; a++) {
+            for (int b = z2; b < z2 + CELL; b++) {
+              if ((a != i && b != j) && (a != x && b != y)) {
+                cells[a][b] &= ~cells[i][j];
+              }
+            }
+          }
+          pairs &= ~inter;
+        }
+      }
+    }
+  }
+}
+}
+}*/
 }
 
 int main(int argc, char **argv) {
@@ -470,14 +482,14 @@ int main(int argc, char **argv) {
   for (int i = 0; i < 40; i++) {
     // Do one round of elimination
     eliminate(cells, rowfin, colfin, sqrfin);
-    char buf[GRP_SZ * GRP_SZ + GRP_SZ];
-    cells_str(cells, buf, GRP_SZ * GRP_SZ + GRP_SZ);
-    LOG("cells after eliminate round %d\n%s", i, buf);
-    //    naked_pairs(cells);
-    //   hidden_pairs(cells);
+    //    char buf[GRP_SZ * GRP_SZ + GRP_SZ];
+    //    cells_str(cells, buf, GRP_SZ * GRP_SZ + GRP_SZ);
+    //    LOG("cells after eliminate round %d\n%s", i, buf);
+    // naked_pairs(cells);
+    hidden_pairs(cells);
     singles(cells);
-    cells_str(cells, buf, GRP_SZ * GRP_SZ + GRP_SZ);
-    LOG("cells after singles\n%s", buf);
+    //    cells_str(cells, buf, GRP_SZ * GRP_SZ + GRP_SZ);
+    //    LOG("cells after singles\n%s", buf);
     update_solved((const uint16_t(*)[GRP_SZ]) cells, rowfin, colfin, sqrfin);
 
     if (is_solved(rowfin, colfin, sqrfin)) {
@@ -490,3 +502,5 @@ int main(int argc, char **argv) {
 
   return 1;
 }
+
+/* vim:set ts=2 sw=2 et: */
