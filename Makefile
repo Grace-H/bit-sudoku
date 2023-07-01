@@ -5,8 +5,11 @@ CFLAGS = -g -Wall -std=gnu99
 
 all: sudoku
 
-sudoku: sudoku.c
-	$(CC) $(CFLAGS) -o sudoku sudoku.c
+sudoku: sudoku.c util.o
+	$(CC) $(CFLAGS) -o sudoku sudoku.c util.o
+
+util.o: util.c
+	$(CC) $(CFLAGS) -c util.c
 
 clean:
 	rm -f *.o

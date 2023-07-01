@@ -6,55 +6,8 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
 
-#define GRP_SZ 9
-#define CELL 3
-#define LOG(format, ...) fprintf(stderr, "%s(%d):\t" format "\n",       \
-    __func__, __LINE__, ##__VA_ARGS__)
-
-static int cells_str(uint16_t cells[GRP_SZ][GRP_SZ], char *buf, int n) {
-  if (n < (GRP_SZ + 1) * GRP_SZ) {
-    LOG("too short");
-    errno = EINVAL;
-    return -1;
-  }
-
-  int k = 0;
-  for (int i = 0; i < GRP_SZ; i++) {
-    for (int j = 0; j < GRP_SZ + 1; j++) {
-      if (j == GRP_SZ) {
-        buf[k++] = '\n';
-      }
-      else if (!(cells[i][j] & (cells[i][j] - 1))) {
-        int x = 1;
-        while (cells[i][j] >> x != 0)
-          x++;
-        buf[k++] = x + '0';
-      }
-      else {
-        buf[k++] = '0';
-      }
-    }
-  }
-  buf[k] = '\0';
-  return k;
-}
-
-static int vec_str(const uint16_t vec, char *buf, int n) {
-  if (n < GRP_SZ + 1) {
-    errno = EINVAL;
-    return -1;
-  }
-
-  int i;
-  for (i = 0; i < GRP_SZ; i++) {
-    buf[i] = ((vec >> (GRP_SZ - i - 1)) & 1) + '0';
-  }
-
-  buf[i] = '\0';
-  return i;
-}
+#include "util.h"
 
 // Get square number (0->9 reading left-right top-bottom) from i,j coordinates
 // Square index is i rounded down to nearest multiple of cell size + j divided by cell size
@@ -66,15 +19,6 @@ static inline int sqr_index(int i, int j) {
 static void sqr_coords(int n, int *i, int *j) {
   *i = (n / CELL) * CELL;
   *j = (n % CELL) * CELL;
-}
-
-// Count number of set bits in vector of length GRP_SZ
-static int bit_count(const uint16_t n) {
-  int count = 0;
-  for (int i = 0; i < GRP_SZ; i++) {
-    count += (n >> i) & 1;
-  }
-  return count;
 }
 
 // Update which values in each row, column, and square have been solved
