@@ -308,25 +308,6 @@ static void hidden_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
             if (inter == (cells[i][x] & pairs)) {
               cells[i][j] = inter;
               cells[i][x] = inter;
-              for (int k = 0; k < GRP_SZ; k++) {
-                if (k != j && k != x) {
-                  cells[i][k] &= ~cells[i][j];
-                }
-              }
-
-              // If they're in the same square, update as well
-              if (sqr_index(i,j) == sqr_index(i,x)) {
-                int z1, z2;
-                sqr_coords(sqr_index(i,j), &z1, &z2);
-                for (int a = z1; a < z1 + CELL; a++) {
-                  for (int b = z2; b < z2 + CELL; b++) {
-                    if (!(a == i && b == j) && !(a == i && b == x)) {
-                      cells[a][b] &= ~cells[i][j];
-                    };
-                  }
-                }
-              }
-
               pairs &= ~inter;
             }
           }
@@ -366,25 +347,6 @@ static void hidden_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
             if (inter == (cells[y][j] & pairs)) {
               cells[i][j] = inter;
               cells[y][j] = inter;
-              for (int k = 0; k < GRP_SZ; k++) {
-                if (k != i && k != y) {
-                  cells[k][j] &= ~cells[i][j];
-                }
-              }
-
-              // If they're in the same square, update as well
-              if (sqr_index(i,j) == sqr_index(y,j)) {
-                int z1, z2;
-                sqr_coords(sqr_index(i,j), &z1, &z2);
-                for (int a = z1; a < z1 + CELL; a++) {
-                  for (int b = z2; b < z2 + CELL; b++) {
-                    if (!(a == i && b == j) && !(a == y && b == j)) {
-                      cells[a][b] &= ~cells[i][j];
-                    };
-                  }
-                }
-              }
-
               pairs &= ~inter;
             }
           }
@@ -430,32 +392,6 @@ static void hidden_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
                 if (!(i == x && j == y) && inter == (cells[x][y] & pairs)) {
                   cells[i][j] = inter;
                   cells[x][y] = inter;
-                  for (int a = z1; a < z1 + CELL; a++) {
-                    for (int b = z2; b < z2 + CELL; b++) {
-                      if (!(a == i && b == j) && !(a == x && b == y)) {
-                        cells[a][b] &= ~cells[i][j];
-                      }
-                    }
-                  }
-
-                  // If cells are in the same row, update as well
-                  if (i == x) {
-                    for (int k = 0; k < GRP_SZ; k++) {
-                      if (k != j && k != y) {
-                        cells[i][k] &= ~cells[i][j];
-                      }
-                    }
-                  }
-
-                  // If cells are in the same column, update as well
-                  if (j == y) {
-                    for (int k = 0; k < GRP_SZ; k++) {
-                      if (k != i && k != x) {
-                        cells[k][j] &= ~cells[i][j];
-                      }
-                    }
-                  }
-
                   pairs &= ~inter;
                 }
               }
@@ -524,16 +460,12 @@ int main(int argc, char **argv) {
   for (int i = 0; i < 15; i++) {
     // Do one round of elimination
     eliminate(cells, rowfin, colfin, sqrfin);
-    char buf[GRP_SZ * GRP_SZ + GRP_SZ];
-    cells_str(cells, buf, GRP_SZ * GRP_SZ + GRP_SZ);
-    // LOG("cells after eliminate round %d\n%s", i, buf);
-    naked_pairs(cells);
-    hidden_pairs(cells);
-    cells_str(cells, buf, GRP_SZ * GRP_SZ + GRP_SZ);
-    // LOG("cells after pairs strat\n%s", buf);
     singles(cells);
-    update_solved((const uint16_t(*)[GRP_SZ]) cells, rowfin, colfin, sqrfin);
 
+    hidden_pairs(cells);
+    naked_pairs(cells);
+
+    update_solved((const uint16_t(*)[GRP_SZ]) cells, rowfin, colfin, sqrfin);
     if (is_solved(rowfin, colfin, sqrfin)) {
       printf("Solved in %d iterations\n", i);
       return 0;
