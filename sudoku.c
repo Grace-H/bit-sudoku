@@ -347,6 +347,77 @@ static void hidden_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
   }
 }
 
+// Pointing pairs strategy: Within a sqaure, find pairs of cells in the same
+// row/column that are the only two that can have a number, eliminate this
+// option from the row/column
+static void pointing_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
+  // Look for pointing pairs in each square
+  for (int z = 0; z < GRP_SZ; z++) {
+    // Count number of cells that can hold each number
+    int opts_count[GRP_SZ];
+    for (int x = 0; x < GRP_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+    int z1, z2;
+    sqr_coords(z, &z1, &z2);
+    for (int i = z1; i < z1 + CELL; i++) {
+      for (int j = z2; j < z2 + CELL; j++) {
+        for (int k = 0; k < GRP_SZ; k++) {
+          opts_count[k] += (cells[i][j] >> k) & 1;
+        }
+      }
+    }
+
+    // Make bitvector of numbers that can only go in two cells
+    uint16_t pairs = 0;
+    for (int k = 0; k < GRP_SZ; k++) {
+      if (opts_count[k] == 2) {
+        pairs |= 1 << k;
+      }
+    }
+
+    if (bit_count(pairs) >= 1) {
+      // Find the pairs of cells with these numbers
+      for (int i = z1; i < z1 + CELL; i++) {
+        for (int j = z2; j < z2 + CELL; j++) {
+
+          // If cell contains a pair, check the row/column for the other
+          uint16_t inter = cells[i][j] & pairs;
+          if (inter) {
+
+            // Column
+            for (int y = i + 1; inter && y < z1 + CELL; y++) {
+              uint16_t pair = inter & cells[y][j];
+              if (pair) {
+                for (int k = 0; k < GRP_SZ; k++) {
+                  if (k != y && k != i) {
+                    cells[k][j] &= ~pair;
+                  }
+                }
+                inter &= ~pair; // Pair is found
+              }
+            }
+
+            // Row
+            for (int x = j + 1; inter && x < z2 + CELL; x++) {
+              uint16_t pair = inter & cells[i][x];
+              if (pair) {
+                for (int k = 0; k < GRP_SZ; k++) {
+                  if (k != x && k != j) {
+                    cells[i][k] &= ~pair;
+                  }
+                }
+                inter &= ~pair; // Pair is found
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 int main(int argc, char **argv) {
 
   if (argc != 2) {
@@ -408,6 +479,7 @@ int main(int argc, char **argv) {
 
     hidden_pairs(cells);
     naked_pairs(cells);
+    pointing_pairs(cells);
 
     update_solved((const uint16_t(*)[GRP_SZ]) cells, rowfin, colfin, sqrfin);
     if (is_solved(rowfin, colfin, sqrfin)) {
