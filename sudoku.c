@@ -418,6 +418,72 @@ static void pointing_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
   }
 }
 
+static void x_wing(uint16_t cells[GRP_SZ][GRP_SZ]) {
+
+  // Build pair vectors for each row
+  // Bit is set in vector if that number appears exactly twice in row
+  uint16_t row_pairs[GRP_SZ];
+  for (int x = 0; x < GRP_SZ; x++) {
+    row_pairs[x] = 0;
+  }
+
+  for (int i = 0; i < GRP_SZ; i++) {
+    // Count number of cells that can hold each number
+    int opts_count[GRP_SZ];
+    for (int x = 0; x < GRP_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+    for (int j = 0; j < GRP_SZ; j++) {
+      for (int k = 0; k < GRP_SZ; k++) {
+        opts_count[k] += (cells[i][j] >> k) & 1;
+      }
+    }
+
+    // Make bitvector of numbers that can only go in two cells
+    for (int k = 0; k < GRP_SZ; k++) {
+      if (opts_count[k] == 2) {
+        row_pairs[i] |= 1 << k;
+      }
+    }
+  }
+
+  for (int i = 0; i < GRP_SZ; i++) {
+    for (int j = i + 1; j < GRP_SZ; j++) {
+      uint16_t inter = row_pairs[i] & row_pairs[j];
+      for (int n = 0; (inter >> n) != 0; n++) {
+        if (!(inter & (1 << n)))
+          continue;
+
+        // Find columns of pair in row i
+        int col1 = 0, col2 = 0; // There should only be two - they are pairs
+        int found = 0;
+        for (int k = 0; k < GRP_SZ; k++) {
+          if (cells[i][k] & (1 << n)) {
+            if (!found) {
+              found = 1;
+              col1 = k;
+            } else {
+              col2 = k;
+            }
+          }
+        }
+
+        // Do columns match in row j? If so, eliminate from columns
+        if ((cells[j][col1] & (1 << n)) && (cells[j][col2] & (1 << n))) {
+          for (int k = 0; k < GRP_SZ; k++) {
+            if (k != i && k != j) {
+              cells[k][col1] &= ~(1 << n);
+              cells[k][col2] &= ~(1 << n);
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+
 int main(int argc, char **argv) {
 
   if (argc != 2) {
@@ -480,6 +546,7 @@ int main(int argc, char **argv) {
     hidden_pairs(cells);
     naked_pairs(cells);
     pointing_pairs(cells);
+    x_wing(cells);
 
     update_solved((const uint16_t(*)[GRP_SZ]) cells, rowfin, colfin, sqrfin);
     if (is_solved(rowfin, colfin, sqrfin)) {
