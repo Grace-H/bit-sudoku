@@ -481,6 +481,67 @@ static void x_wing(uint16_t cells[GRP_SZ][GRP_SZ]) {
       }
     }
   }
+
+  // Build pair vectors for each column
+  uint16_t col_pairs[GRP_SZ];
+  for (int x = 0; x < GRP_SZ; x++) {
+    col_pairs[x] = 0;
+  }
+
+  for (int j = 0; j < GRP_SZ; j++) {
+    // Count number of cells that can hold each number
+    int opts_count[GRP_SZ];
+    for (int x = 0; x < GRP_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+    for (int i = 0; i < GRP_SZ; i++) {
+      for (int k = 0; k < GRP_SZ; k++) {
+        opts_count[k] += (cells[i][j] >> k) & 1;
+      }
+    }
+
+    // Make bitvector of numbers that can only go in two cells
+    for (int k = 0; k < GRP_SZ; k++) {
+      if (opts_count[k] == 2) {
+        col_pairs[j] |= 1 << k;
+      }
+    }
+  }
+
+  for (int i = 0; i < GRP_SZ; i++) {
+    for (int j = i + 1; j < GRP_SZ; j++) {
+      uint16_t inter = col_pairs[i] & col_pairs[j];
+      for (int n = 0; (inter >> n) != 0; n++) {
+        if (!(inter & (1 << n)))
+          continue;
+
+        // Find rows of pair in column i
+        int row1 = 0, row2 = 0; // There should only be two - they are pairs
+        int found = 0;
+        for (int k = 0; k < GRP_SZ; k++) {
+          if (cells[k][i] & (1 << n)) {
+            if (!found) {
+              found = 1;
+              row1 = k;
+            } else {
+              row2 = k;
+            }
+          }
+        }
+
+        // Do columns match in col j? If so, eliminate from columns
+        if ((cells[row1][j] & (1 << n)) && (cells[row2][j] & (1 << n))) {
+          for (int k = 0; k < GRP_SZ; k++) {
+            if (k != i && k != j) {
+              cells[row1][k] &= ~(1 << n);
+              cells[row2][k] &= ~(1 << n);
+            }
+          }
+        }
+      }
+    }
+  }
 }
 
 
