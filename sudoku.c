@@ -542,6 +542,62 @@ static void x_wing(uint16_t cells[GRP_SZ][GRP_SZ]) {
       }
     }
   }
+
+  // Build pair vectors for each sqaure
+  uint16_t sqr_pairs[GRP_SZ];
+  for (int x = 0; x < GRP_SZ; x++) {
+    sqr_pairs[x] = 0;
+  }
+
+  for (int z = 0; z < GRP_SZ; z++) {
+    // Count number of cells that can hold each number
+    int opts_count[GRP_SZ];
+    for (int x = 0; x < GRP_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+    int z1, z2;
+    sqr_coords(z, &z1, &z2);
+    for (int i = z1; i < z1 + CELL; i++) {
+      for (int j = z2; j < z2 + CELL; j++) {
+        for (int k = 0; k < GRP_SZ; k++) {
+          opts_count[k] += (cells[i][j] >> k) & 1;
+        }
+      }
+    }
+
+    // Make bitvector of numbers that can only go in two cells
+    for (int k = 0; k < GRP_SZ; k++) {
+      if (opts_count[k] == 2) {
+        sqr_pairs[z] |= 1 << k;
+      }
+    }
+  }
+
+  for (int i = 0; i < GRP_SZ; i++) {
+
+    // Compare horizontally
+    for (int j = i + 1; j < (i / CELL) * CELL + CELL; j++) {
+      uint16_t inter = sqr_pairs[i] & sqr_pairs[j];
+      for (int n = 0; (inter >> n) != 0; n++) {
+        if (!(inter & (1 << n)))
+          continue;
+
+        // TODO Check if rows match
+      }
+    }
+
+    // Compare vertically
+    for (int j = i + CELL; j < GRP_SZ; j += CELL) {
+      uint16_t inter = sqr_pairs[i] & sqr_pairs[j];
+      for (int n = 0; (inter >> n) != 0; n++) {
+        if (!(inter & (1 << n)))
+          continue;
+
+        // TODO Check if columns match
+      }
+    }
+  }
 }
 
 
