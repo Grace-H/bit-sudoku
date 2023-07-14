@@ -530,7 +530,7 @@ static void x_wing(uint16_t cells[GRP_SZ][GRP_SZ]) {
           }
         }
 
-        // Do columns match in col j? If so, eliminate from columns
+        // Do rows match in column j? If so, eliminate from rows
         if ((cells[row1][j] & (1 << n)) && (cells[row2][j] & (1 << n))) {
           for (int k = 0; k < GRP_SZ; k++) {
             if (k != i && k != j) {
@@ -583,7 +583,47 @@ static void x_wing(uint16_t cells[GRP_SZ][GRP_SZ]) {
         if (!(inter & (1 << n)))
           continue;
 
-        // TODO Check if rows match
+        int row1 = 0, row2 = 0;
+        int found = 0;
+        int z1, z2;
+        sqr_coords(i, &z1, &z2);
+        for (int a = z1; a < z1 + CELL; a++) {
+          for (int b = z2; b < z2 + CELL; b++) {
+            if (cells[a][b] & (1 << n)) {
+              if (!found) {
+                found = 1;
+                row1 = a;
+              } else {
+                row2 = a;
+              }
+            }
+          }
+        }
+
+        // This is a pointing pair, not an x-wing pattern
+        if (row1 == row2)
+          continue;
+
+        // Do rows match in square j? If so, eliminate from third square
+        sqr_coords(j, &z1, &z2);
+        uint16_t row1_or = cells[row1][z2] | cells[row1][z2 + 1] | cells[row1][z2 + 2];
+        uint16_t row2_or = cells[row2][z2] | cells[row2][z2 + 1] | cells[row2][z2 + 2];
+
+        if ((row1_or & (1 << n)) && (row2_or & (1 << n))) {
+          int elim_square = 0;
+          if (i % CELL)                             // 1,2
+            elim_square = i - 1;
+          else if (i % CELL == 0 && j % CELL == 1)  // 0,1
+            elim_square = j + 1;
+          else                                      // 0,2
+            elim_square = i + 1;
+
+          sqr_coords(elim_square, &z1, &z2);
+          for (int b = z2; b < z2 + CELL; b++) {
+            cells[row1][b] &= ~(1 << n);
+            cells[row2][b] &= ~(1 << n);
+          }
+        }
       }
     }
 
@@ -594,12 +634,51 @@ static void x_wing(uint16_t cells[GRP_SZ][GRP_SZ]) {
         if (!(inter & (1 << n)))
           continue;
 
-        // TODO Check if columns match
+        int col1 = 0, col2 = 0;
+        int found = 0;
+        int z1, z2;
+        sqr_coords(i, &z1, &z2);
+        for (int a = z1; a < z1 + CELL; a++) {
+          for (int b = z2; b < z2 + CELL; b++) {
+            if (cells[a][b] & (1 << n)) {
+              if (!found) {
+                found = 1;
+                col1 = b;
+              } else {
+                col2 = b;
+              }
+            }
+          }
+        }
+
+        // This is a pointing pair, not an x-wing pattern
+        if (col1 == col2)
+          continue;
+
+        // Do columns match in square j? If so, eliminate from third square
+        sqr_coords(j, &z1, &z2);
+        uint16_t col1_or = cells[z1][col1] | cells[z1 + 1][col1] | cells[z1 + 2][col1];
+        uint16_t col2_or = cells[z1][col2] | cells[z1 + 1][col2] | cells[z1 + 2][col2];
+
+        if ((col1_or & (1 << n)) && (col2_or & (1 << n))) {
+          int elim_square = 0;
+          if (i / CELL)
+            elim_square = i - CELL;
+          else if (i / CELL == 0 && j / CELL == 1)
+            elim_square = j + CELL;
+          else
+            elim_square = i + CELL;
+
+          sqr_coords(elim_square, &z1, &z2);
+          for (int a = z1; a < z1 + CELL; a++) {
+            cells[a][col1] &= ~(1 << n);
+            cells[a][col2] &= ~(1 << n);
+          }
+        }
       }
     }
   }
 }
-
 
 int main(int argc, char **argv) {
 
