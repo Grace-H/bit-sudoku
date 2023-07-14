@@ -200,7 +200,7 @@ static void naked_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
         sqr_coords(sqr_index(i, j), &a, &b);
         for (int k = a; k < a + CELL; k++) {
           for (int l = b; l < b + CELL; l++) {
-            if ((i != k && j != l) && cells[i][j] == cells[k][l]) {
+            if (!(i == k && j == l) && cells[i][j] == cells[k][l]) {
               for (int z1 = a; z1 < a + CELL; z1++) {
                 for (int z2 = b; z2 < b + CELL; z2++) {
                   if (cells[i][j] != cells[z1][z2]) {
