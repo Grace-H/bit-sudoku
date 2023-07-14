@@ -347,6 +347,100 @@ static void hidden_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
   }
 }
 
+// Claiming pairs strategy: Find pairs of cells in the same row/column
+// that are in the same square, and eliminate that candidate from the square
+static void claiming_pairs(uint16_t cells[GRP_SZ][GRP_SZ]) {
+  // Look for claiming pairs in each row
+  for (int i = 0; i < GRP_SZ; i++) {
+    // Count number of cells that can hold each number
+    int opts_count[GRP_SZ];
+    for (int x = 0; x < GRP_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+    for (int j = 0; j < GRP_SZ; j++) {
+      for (int k = 0; k < GRP_SZ; k++) {
+        opts_count[k] += (cells[i][j] >> k) & 1;
+      }
+    }
+
+    // Make a bitvector of numbers that can only go in two cells
+    uint16_t pairs = 0;
+    for (int k = 0; k < GRP_SZ; k++) {
+      if (opts_count[k] == 2) {
+        pairs |= 1 << k;
+      }
+    }
+
+    if (bit_count(pairs) >= 1) {
+      // Find the pairs of cells with these numbers
+      for (int j = 0; j < GRP_SZ; j++) {
+        uint16_t inter = cells[i][j] & pairs;
+        if (inter) {
+          // Check remainder of intersection with square for other pair
+          for (int k = j + 1; k < j / CELL * CELL + CELL; k++) {
+            uint16_t pair = inter & cells[i][k];
+            if (pair) {
+              int z1, z2;
+              sqr_coords(sqr_index(i, j), &z1, &z2);
+              for (int a = z1; a < z1 + CELL; a++) {
+                for (int b = z2; b < z2 + CELL; b++) {
+                  if (!(a == i && b == j) && !(a == i && b == k)) {
+                    cells[a][b] &= ~pair;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Columns
+  for (int j = 0; j < GRP_SZ; j++) {
+    int opts_count[GRP_SZ];
+    for (int x = 0; x < GRP_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+    for (int i = 0; i < GRP_SZ; i++) {
+      for (int k = 0; k < GRP_SZ; k++) {
+        opts_count[k] += (cells[i][j] >> k) & 1;
+      }
+    }
+
+    uint16_t pairs = 0;
+    for (int k = 0; k < GRP_SZ; k++) {
+      if (opts_count[k] == 2) {
+        pairs |= 1 << k;
+      }
+    }
+
+    if (bit_count(pairs) >= 1) {
+      for (int i = 0; i < GRP_SZ; i++) {
+        uint16_t inter = cells[i][j] & pairs;
+        if (inter) {
+          for (int k = i + 1; k < i / CELL * CELL + CELL; k++) {
+            uint16_t pair = inter & cells[k][j];
+            if (pair) {
+              int z1, z2;
+              sqr_coords(sqr_index(i, j), &z1, &z2);
+              for (int a = z1; a < z1 + CELL; a++) {
+                for (int b = z2; b < z2 + CELL; b++) {
+                  if (!(a == i && b == j) && !(a == k && b == j)) {
+                    cells[a][b] &= ~pair;
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 // Pointing pairs strategy: Within a sqaure, find pairs of cells in the same
 // row/column that are the only two that can have a number, eliminate this
 // option from the row/column
@@ -742,6 +836,7 @@ int main(int argc, char **argv) {
     hidden_pairs(cells);
     naked_pairs(cells);
     pointing_pairs(cells);
+    claiming_pairs(cells);
     x_wing(cells);
 
     update_solved((const uint16_t(*)[GRP_SZ]) cells, rowfin, colfin, sqrfin);
