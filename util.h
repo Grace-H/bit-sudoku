@@ -23,6 +23,9 @@ struct stack {
 	struct node *head;
 };
 
+void stack_init(struct stack *stack);
+void stack_destroy(struct stack *stack);
+
 void stack_push(struct stack *stack, void *datum);
 void *stack_pop(struct stack *stack);
 int stack_is_empty(struct stack *stack);

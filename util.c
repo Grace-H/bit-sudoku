@@ -67,6 +67,20 @@ int vec_str(const uint16_t vec, char *buf, int n) {
   return i;
 }
 
+void stack_init(struct stack *stack) {
+  stack->head = NULL;
+}
+
+void stack_destroy(struct stack *stack) {
+  while (stack->head) {
+    struct node *node = stack->head;
+    stack->head = node->next;
+    free(node);
+  }
+}
+
+void stack_destroy(struct stack *stack);
+
 void stack_push(struct stack *stack, void *datum) {
 	struct node *node = malloc(sizeof(struct node));
 	node->datum = datum;
