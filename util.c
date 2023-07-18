@@ -7,6 +7,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "util.h"
 
@@ -66,3 +67,26 @@ int vec_str(const uint16_t vec, char *buf, int n) {
   return i;
 }
 
+void stack_push(struct stack *stack, void *datum) {
+	struct node *node = malloc(sizeof(struct node));
+	node->datum = datum;
+	node->next = stack->head;
+	stack->head = node;
+};
+
+void *stack_pop(struct stack *stack) {
+	if (!stack->head)
+		return NULL;
+
+	struct node *node = stack->head;
+	stack->head = node->next;
+	void *datum = node->datum;
+	free(node);
+	return datum;
+}
+
+int stack_is_empty(struct stack *stack) {
+	return stack->head == NULL;
+}
+
+/* vim:set ts=2 sw=2 et: */
