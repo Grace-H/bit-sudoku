@@ -15,9 +15,9 @@
 #define N_CELLS 81
 
 struct transform {
-	int i; // Coordinates of cell transformed
-	int j;
-	uint16_t candidates; // Former candidates of cell
+  int i; // Coordinates of cell transformed
+  int j;
+  uint16_t candidates; // Former candidates of cell
 };
 
 // Get square number (0->9 reading left-right top-bottom) from i,j coordinates
@@ -35,7 +35,7 @@ static void sqr_coords(int n, int *i, int *j) {
 // Update which values in each row, column, and square have been solved
 // Set bit indicates value exists in region
 static void update_solved(const uint16_t cells[GRP_SZ][GRP_SZ], uint16_t row[GRP_SZ],
-    uint16_t col[GRP_SZ], uint16_t sqr[GRP_SZ]) {
+                          uint16_t col[GRP_SZ], uint16_t sqr[GRP_SZ]) {
   for (int i = 0; i < GRP_SZ; i++) {
     for (int j = 0; j < GRP_SZ; j++) {
       uint16_t c = cells[i][j];
@@ -61,6 +61,18 @@ int is_solved(uint16_t row[GRP_SZ], uint16_t col[GRP_SZ], uint16_t sqr[GRP_SZ]) 
   return 1;
 }
 
+// Check if the board is valid - all cells have at least one possibility
+int is_valid(const uint16_t cells[GRP_SZ][GRP_SZ]) {
+  for (int i = 0; i < GRP_SZ; i++) {
+    for (int j = 0; j < GRP_SZ; j++) {
+      if (!cells[i][j]) {
+        return 0;
+      }
+    }
+  }
+  return 1;
+}
+
 int main(int argc, char **argv) {
 
   if (argc != 2) {
@@ -73,7 +85,7 @@ int main(int argc, char **argv) {
   uint16_t nine = (1 << GRP_SZ) - 1;
   for (int i = 0; i < GRP_SZ; i++) {
     for (int j = 0; j < GRP_SZ; j++) {
-      cells[i][j] = nine; 
+      cells[i][j] = nine;
     }
   }
 
@@ -128,15 +140,70 @@ int main(int argc, char **argv) {
   }
 
   // Initialize stack for tracking transformations
-	struct stack transforms;
+  struct stack transforms;
   stack_init(&transforms);
 
   int n = 0; // Current location in grid
   while (n < N_CELLS && !is_solved(rowfin, colfin, sqrfin)) {
+    while (is_valid((const uint16_t(*)[GRP_SZ]) cells)) {
+      // Find next unsolved cell
+      int i = n / GRP_SZ;
+      int j = n % GRP_SZ;
+      while ((n < N_CELLS) && !(cells[i][j] & (cells[i][j] - 1))) {
+        n++;
+        i = n / GRP_SZ;
+        j = n % GRP_SZ;
+      }
 
+      if (n >= N_CELLS) {
+        printf("Not solved\n");
+        return 1;
+      }
+
+      // Construct transformation
+      int solution = 0;
+      while (!((cells[i][j] >> solution) & 1)) {
+        solution++;
+      }
+
+      struct transform *trans = malloc(sizeof(struct transform));
+      trans->i = i;
+      trans->j = j;
+      trans->candidates = cells[i][j];
+      cells[i][j] &= 1 << solution;
+      stack_push(&transforms, trans);
+
+      // Update houses
+      uint16_t elim = ~(1 << solution);
+
+      for (int x = 0; x < GRP_SZ; x++) {
+        if (x != j) {
+          cells[i][x] &= elim;
+        }
+      }
+
+      for (int y = 0; y < GRP_SZ; y++) {
+        if (y != i) {
+          cells[y][j] &= elim;
+        }
+      }
+
+      int z1, z2;
+      sqr_coords(sqr_index(i, j), &z1, &z2);
+      for (int a = z1; a < z1 + CELL; a++) {
+        for (int b = z2; b < z2 + CELL; b++) {
+          if (!(a == i && b == j)) {
+            cells[a][b] &= elim;
+          }
+        }
+      }
+    }
+
+    update_solved((const uint16_t(*)[GRP_SZ]) cells, rowfin, colfin, sqrfin);
   }
 
-	return 0;
+  printf("Solved");
+  return 0;
 }
 
 /* vim:set ts=2 sw=2 et: */
