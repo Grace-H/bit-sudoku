@@ -11,10 +11,6 @@
 
 #include "util.h"
 
-#define LOG(format, ...) fprintf(stderr, "%s(%d):\t" format "\n",       \
-    __func__, __LINE__, ##__VA_ARGS__)
-
-
 // Count number of set bits in vector of length GRP_SZ
 int bit_count(const uint16_t n) {
   int count = 0;

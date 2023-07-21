@@ -9,6 +9,9 @@
 #define GRP_SZ 9
 #define CELL 3
 
+#define LOG(format, ...) fprintf(stderr, "%s(%d):\t" format "\n",       \
+    __func__, __LINE__, ##__VA_ARGS__)
+
 int bit_count(const uint16_t n);
 
 int cells_str(uint16_t cells[GRP_SZ][GRP_SZ], char *buf, int n);
