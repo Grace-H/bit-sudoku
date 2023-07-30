@@ -139,6 +139,14 @@ int main(int argc, char **argv) {
     }
   }
 
+  // Initialize copy for reference of original puzzle
+  uint16_t ref[GRP_SZ][GRP_SZ];
+  for (int i = 0; i < GRP_SZ; i++) {
+    for (int j = 0; j < GRP_SZ; j++) {
+      ref[i][j] = cells[i][j];
+    }
+  }
+
   // Initialize stack for tracking transformations
   struct stack transforms;
   stack_init(&transforms);
