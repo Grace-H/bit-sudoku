@@ -16,4 +16,4 @@ util.o: util.c
 
 clean:
 	rm -f *.o
-	rm -f sudoku
+	rm -f sudoku stack-solver
