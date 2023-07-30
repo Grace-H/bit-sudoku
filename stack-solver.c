@@ -221,6 +221,101 @@ int main(int argc, char **argv) {
       }
     }
 
+    // Revert changes back to valid state
+    // Change previous transformation, or roll back as many as needed
+    int reverted = 0;
+    while (!reverted) {
+      struct transform *trans = stack_pop(&transforms);
+      int i = trans->i;
+      int j = trans->j;
+      n = i * GRP_SZ + j;
+      uint16_t solution = cells[i][j]; // Current, invalid solution
+
+      // Reverse effect on houses
+      for (int x = 0; x < GRP_SZ; x++) {
+        if (x != j) {
+          cells[i][x] |= solution;
+        }
+      }
+
+      for (int y = 0; y < GRP_SZ; y++) {
+        if (y != i) {
+          cells[y][j] |= solution;
+        }
+      }
+
+      int z1, z2;
+      sqr_coords(sqr_index(i, j), &z1, &z2);
+      for (int a = z1; a < z1 + CELL; a++) {
+        for (int b = z2; b < z2 + CELL; b++) {
+          if (!(a == i && b == j)) {
+            cells[a][b] |= solution;
+          }
+        }
+      }
+
+      update_solved((const uint16_t(*)[GRP_SZ]) cells, rowfin, colfin, sqrfin);
+
+      uint16_t nine = (1 << GRP_SZ) - 1;
+      for (int a = 0; a < GRP_SZ; a++) {
+        for (int b = 0; b < GRP_SZ; b++) {
+          // if this cell is not solved, cross off possibilities
+          if(cells[a][b] != ref[a][b]) {
+            cells[a][b] = (nine & (~rowfin[a] | ~colfin[b] | ~sqrfin[sqr_index(a, b)]));
+          }
+        }
+      }
+
+      // Try alternate transformation on the same cell
+      cells[i][j] = trans->candidates;
+      int shift = 0;
+      while (solution >> shift) {
+        shift++;
+      }
+      shift++;
+      while (shift < GRP_SZ && !((cells[i][j] >> shift) & 1)) {
+        // XXX off by one? ^
+        shift++;
+      }
+
+      if (shift >= GRP_SZ) {
+        free(trans);
+        // TODO - need to try alternate transformation with the last one
+        // because otherwise puzzle appears valid and advance step repeats
+        // identically
+      } else {
+        // Try alternate transformation
+        cells[i][j] &= 1 << shift;
+        stack_push(&transforms, trans);
+
+        // Update houses
+        uint16_t elim = ~(1 << shift);
+
+        for (int x = 0; x < GRP_SZ; x++) {
+          if (x != j) {
+            cells[i][x] &= elim;
+          }
+        }
+
+        for (int y = 0; y < GRP_SZ; y++) {
+          if (y != i) {
+            cells[y][j] &= elim;
+          }
+        }
+
+        int z1, z2;
+        sqr_coords(sqr_index(i, j), &z1, &z2);
+        for (int a = z1; a < z1 + CELL; a++) {
+          for (int b = z2; b < z2 + CELL; b++) {
+            if (!(a == i && b == j)) {
+              cells[a][b] &= elim;
+            }
+          }
+        }
+        reverted = 1;
+      }
+    }
+
     update_solved((const uint16_t(*)[GRP_SZ]) cells, rowfin, colfin, sqrfin);
   }
 
