@@ -244,24 +244,27 @@ int main(int argc, char **argv) {
       uint16_t solution = cells[i][j]; // Current, invalid solution
 
       // Reverse effect on houses
-      for (int x = 0; x < GRP_SZ; x++) {
-        if (x != j) {
+      // Add as candidate in cells > n that weren't solved in original
+      for (int x = j + 1; x < GRP_SZ; x++) {
+        if (cells[i][x] != ref[i][x]) {
           cells[i][x] |= solution;
         }
       }
 
-      for (int y = 0; y < GRP_SZ; y++) {
-        if (y != i) {
+      for (int y = i + 1; y < GRP_SZ; y++) {
+        if (cells[y][j] != ref[y][j]) {
           cells[y][j] |= solution;
         }
       }
 
       int z1, z2;
       sqr_coords(sqr_index(i, j), &z1, &z2);
-      for (int a = z1; a < z1 + CELL; a++) {
+      for (int a = i; a < z1 + CELL; a++) {
         for (int b = z2; b < z2 + CELL; b++) {
-          if (!(a == i && b == j)) {
-            cells[a][b] |= solution;
+          if ((a == i && b > j) || a > i) {
+            if (cells[a][b] != ref[a][b]) {
+              cells[a][b] |= solution;
+            }
           }
         }
       }
@@ -272,7 +275,7 @@ int main(int argc, char **argv) {
       for (int a = 0; a < GRP_SZ; a++) {
         for (int b = 0; b < GRP_SZ; b++) {
           // if this cell is not solved, cross off possibilities
-          if(cells[a][b] != ref[a][b]) {
+          if(cell_index(a, b) > n && cells[a][b] != ref[a][b]) {
             cells[a][b] = (nine & (~rowfin[a] | ~colfin[b] | ~sqrfin[sqr_index(a, b)]));
           }
         }
