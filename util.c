@@ -75,8 +75,6 @@ void stack_destroy(struct stack *stack) {
   }
 }
 
-void stack_destroy(struct stack *stack);
-
 void stack_push(struct stack *stack, void *datum) {
 	struct node *node = malloc(sizeof(struct node));
 	node->datum = datum;
