@@ -32,6 +32,11 @@ static void sqr_coords(int n, int *i, int *j) {
   *j = (n % CELL) * CELL;
 }
 
+// Determine cell number (nth cell) from i,j
+static inline int cell_index(int i, int j) {
+  return i * GRP_SZ + j;
+}
+
 // Update which values in each row, column, and square have been solved
 // Set bit indicates value exists in region
 static void update_solved(const uint16_t cells[GRP_SZ][GRP_SZ], uint16_t row[GRP_SZ],
