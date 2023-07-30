@@ -197,6 +197,20 @@ int main(int argc, char **argv) {
           }
         }
       }
+
+      // This change may have resulted in other cells being solved
+      update_solved((const uint16_t(*)[GRP_SZ]) cells, rowfin, colfin, sqrfin);
+
+      for (int a = 0; a < GRP_SZ; a++) {
+        for (int b = 0; b < GRP_SZ; b++) {
+          // if this cell is not solved, cross off possibilities
+          if(cells[a][b] & (cells[a][b] - 1)) {
+            cells[a][b] &= ~rowfin[a];
+            cells[a][b] &= ~colfin[b];
+            cells[a][b] &= ~sqrfin[sqr_index(a, b)];
+          }
+        }
+      }
     }
 
     update_solved((const uint16_t(*)[GRP_SZ]) cells, rowfin, colfin, sqrfin);
