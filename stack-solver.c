@@ -36,6 +36,13 @@ static void sqr_coords(int n, int *i, int *j) {
 // Set bit indicates value exists in region
 static void update_solved(const uint16_t cells[GRP_SZ][GRP_SZ], uint16_t row[GRP_SZ],
                           uint16_t col[GRP_SZ], uint16_t sqr[GRP_SZ]) {
+
+  for (int i = 0; i < GRP_SZ; i++) {
+    row[i] = 0;
+    col[i] = 0;
+    sqr[i] = 0;
+  }
+
   for (int i = 0; i < GRP_SZ; i++) {
     for (int j = 0; j < GRP_SZ; j++) {
       uint16_t c = cells[i][j];
