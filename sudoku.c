@@ -789,6 +789,27 @@ static void naked_triplets(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
       if (!(cells[i][j] & (cells[i][j] - 1)))
         continue;
 
+      // Row
+      for (int x1 = j + 1; x1 < HOUSE_SZ; x1++) {
+        if (!(cells[i][x1] & (cells[i][x1] - 1)))
+          continue;
+
+        for (int x2 = x1 + 1; x2 < HOUSE_SZ; x2++) {
+          if (!(cells[i][x2] & (cells[i][x2] - 1)))
+            continue;
+
+          uint16_t un = cells[i][j] | cells[i][x1] | cells[i][x2];
+          if (bit_count(un) == 2) {
+            for(int k = 0; k < HOUSE_SZ; k++) {
+              if (k != j && k != x1 && k != x2) {
+                cells[i][k] &= ~un;
+              }
+            }
+            // XXX Way to jump to next section (column)? There won't be another triplet
+          }
+        }
+      }
+
       // Column - XXX Don't need to iterate all the way to end of column
       for (int y1 = i + 1; y1 < HOUSE_SZ; y1++) {
         if (!(cells[y1][j] & (cells[y1][j] - 1)))
@@ -804,13 +825,11 @@ static void naked_triplets(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
               if (k != i && k != y1 && k != y2) {
                 cells[k][j] &= ~un;
               }
-              // XXX Way to jump to next section (row)? There won't be another
             }
           }
         }
       }
 
-      // Row
       // Square
 
     }
