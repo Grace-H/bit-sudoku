@@ -512,8 +512,11 @@ static void pointing_pairs(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
   }
 }
 
+// X-Wing strategy: An x-wing pattern is formed by two houses that have the same
+// candidate pair in the same rows/columns. Eliminate candidate from rows/columns.
 static void x_wing(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
 
+  // Row
   // Build pair vectors for each row
   // Bit is set in vector if that number appears exactly twice in row
   uint16_t row_pairs[HOUSE_SZ];
@@ -542,6 +545,7 @@ static void x_wing(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
     }
   }
 
+  // Identify x-wings in rows
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = i + 1; j < HOUSE_SZ; j++) {
       uint16_t inter = row_pairs[i] & row_pairs[j];
@@ -576,6 +580,7 @@ static void x_wing(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
     }
   }
 
+  // Column
   // Build pair vectors for each column
   uint16_t col_pairs[HOUSE_SZ];
   for (int x = 0; x < HOUSE_SZ; x++) {
@@ -603,6 +608,7 @@ static void x_wing(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
     }
   }
 
+  // Identify x-wings in columns
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = i + 1; j < HOUSE_SZ; j++) {
       uint16_t inter = col_pairs[i] & col_pairs[j];
@@ -668,6 +674,7 @@ static void x_wing(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
     }
   }
 
+  // Identify x-wings between squares
   for (int i = 0; i < HOUSE_SZ; i++) {
 
     // Compare horizontally
