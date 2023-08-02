@@ -781,6 +781,42 @@ static void x_wing(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
   }
 }
 
+// Naked triplets strategy: same as pairs, but must be a group of three cells
+static void naked_triplets(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+  for (int i = 0; i < HOUSE_SZ; i++) {
+    for (int j = 0; j < HOUSE_SZ; j++) {
+      // If cell solved, continue
+      if (!(cells[i][j] & (cells[i][j] - 1)))
+        continue;
+
+      // Column - XXX Don't need to iterate all the way to end of column
+      for (int y1 = i + 1; y1 < HOUSE_SZ; y1++) {
+        if (!(cells[y1][j] & (cells[y1][j] - 1)))
+          continue;
+
+        for (int y2 = y1 + 1; y2 < HOUSE_SZ; y2++) {
+          if (!(cells[y2][j] & (cells[y2][j] - 1)))
+            continue;
+
+          uint16_t un = cells[i][j] | cells[y1][j] | cells[y2][j];
+          if (bit_count(un) == 3) {
+            for (int k = 0; k < HOUSE_SZ; k++) {
+              if (k != i && k != y1 && k != y2) {
+                cells[k][j] &= ~un;
+              }
+              // XXX Way to jump to next section (row)? There won't be another
+            }
+          }
+        }
+      }
+
+      // Row
+      // Square
+
+    }
+  }
+}
+
 int main(int argc, char **argv) {
 
   if (argc != 2) {
@@ -845,6 +881,8 @@ int main(int argc, char **argv) {
     pointing_pairs(cells);
     claiming_pairs(cells);
     x_wing(cells);
+
+    naked_triplets(cells);
 
     update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, sqrfin);
     if (is_solved(rowfin, colfin, sqrfin)) {
