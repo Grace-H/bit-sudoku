@@ -11,26 +11,26 @@
 
 #include "util.h"
 
-// Count number of set bits in vector of length GRP_SZ
+// Count number of set bits in vector of length HOUSE_SZ
 int bit_count(const uint16_t n) {
   int count = 0;
-  for (int i = 0; i < GRP_SZ; i++) {
+  for (int i = 0; i < HOUSE_SZ; i++) {
     count += (n >> i) & 1;
   }
   return count;
 }
 
-int cells_str(uint16_t cells[GRP_SZ][GRP_SZ], char *buf, int n) {
-  if (n < (GRP_SZ + 1) * GRP_SZ) {
+int cells_str(uint16_t cells[HOUSE_SZ][HOUSE_SZ], char *buf, int n) {
+  if (n < (HOUSE_SZ + 1) * HOUSE_SZ) {
     LOG("too short");
     errno = EINVAL;
     return -1;
   }
 
   int k = 0;
-  for (int i = 0; i < GRP_SZ; i++) {
-    for (int j = 0; j < GRP_SZ + 1; j++) {
-      if (j == GRP_SZ) {
+  for (int i = 0; i < HOUSE_SZ; i++) {
+    for (int j = 0; j < HOUSE_SZ + 1; j++) {
+      if (j == HOUSE_SZ) {
         buf[k++] = '\n';
       }
       else if (!(cells[i][j] & (cells[i][j] - 1))) {
@@ -49,14 +49,14 @@ int cells_str(uint16_t cells[GRP_SZ][GRP_SZ], char *buf, int n) {
 }
 
 int vec_str(const uint16_t vec, char *buf, int n) {
-  if (n < GRP_SZ + 1) {
+  if (n < HOUSE_SZ + 1) {
     errno = EINVAL;
     return -1;
   }
 
   int i;
-  for (i = 0; i < GRP_SZ; i++) {
-    buf[i] = ((vec >> (GRP_SZ - i - 1)) & 1) + '0';
+  for (i = 0; i < HOUSE_SZ; i++) {
+    buf[i] = ((vec >> (HOUSE_SZ - i - 1)) & 1) + '0';
   }
 
   buf[i] = '\0';

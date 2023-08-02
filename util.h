@@ -6,15 +6,15 @@
 
 #include <stdint.h>
 
-#define GRP_SZ 9
-#define CELL 3
+#define HOUSE_SZ 9 // Cells in one house
+#define BLK_WIDTH 3 // Cells in intersection between houses & width of one block
 
 #define LOG(format, ...) fprintf(stderr, "%s(%d):\t" format "\n",       \
     __func__, __LINE__, ##__VA_ARGS__)
 
 int bit_count(const uint16_t n);
 
-int cells_str(uint16_t cells[GRP_SZ][GRP_SZ], char *buf, int n);
+int cells_str(uint16_t cells[HOUSE_SZ][HOUSE_SZ], char *buf, int n);
 int vec_str(const uint16_t vec, char *buf, int n);
 
 struct node {
