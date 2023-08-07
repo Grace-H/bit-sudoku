@@ -3,10 +3,10 @@
 total=0
 pass=0
 
-for file in $1/*
+for file in $2/*
 do
     ((total++))
-    if ../sudoku $file &> /dev/null; then
+    if $1 $file &> /dev/null; then
         ((pass++))
     else
         echo "Test failed: $file"
