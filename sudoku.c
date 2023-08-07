@@ -834,7 +834,40 @@ static void naked_triplets() {
       }
 
       // Square
+      int z1, z2;
+      sqr_coords(sqr_index(i, j), &z1, &z2);
 
+      for (int a = i; a < z1 + BLK_WIDTH; a++) {
+        for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+          if (a == i && b <= j)
+            continue;
+
+          if (!(cells[a][b] & (cells[a][b] - 1)))
+            continue;
+
+          for (int c = a; c < z1 + BLK_WIDTH; c++) {
+            for (int d = z2; d < z2 + BLK_WIDTH; d++) {
+              if (c == a && d <= b)
+                continue;
+
+              if (!(cells[c][d] & (cells[c][d] - 1)))
+                continue;
+
+              uint16_t un = cells[i][j] | cells[a][b] | cells[c][d];
+              if (bit_count(un) == 3) {
+                for (int k = z1; k < z1 + BLK_WIDTH; k++) {
+                  for (int l = z2; l < z2 + BLK_WIDTH; l++) {
+                    if (!((k == i && l == j) || (k == a && l == b) ||
+                          (k == c && l == d))) {
+                      cells[k][l] &= ~un;
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
