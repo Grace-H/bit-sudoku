@@ -9,6 +9,9 @@
 
 #include "util.h"
 
+// 2D array of bitvectors representing candidates
+static uint16_t cells[HOUSE_SZ][HOUSE_SZ]; // only the first 9 bits of each will be used
+
 // Get square number (0->9 reading left-right top-bottom) from i,j coordinates
 // Square index is i rounded down to nearest multiple of cell size + j divided by cell size
 static inline int sqr_index(int i, int j) {
@@ -23,8 +26,8 @@ static void sqr_coords(int n, int *i, int *j) {
 
 // Update which values in each row, column, and square have been solved
 // Set bit indicates value exists in region
-static void update_solved(const uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t row[HOUSE_SZ],
-    uint16_t col[HOUSE_SZ], uint16_t sqr[HOUSE_SZ]) {
+static void update_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ],
+    uint16_t sqr[HOUSE_SZ]) {
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
       uint16_t c = cells[i][j];
@@ -52,8 +55,8 @@ int is_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ], uint16_t sqr[HOUSE
 
 // Eliminate possibilites for each cell based on what values are already
 // in each row/column/square
-static void eliminate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], const uint16_t row[HOUSE_SZ],
-    const uint16_t col[HOUSE_SZ], const uint16_t sqr[HOUSE_SZ]) {
+static void eliminate(const uint16_t row[HOUSE_SZ], const uint16_t col[HOUSE_SZ],
+    const uint16_t sqr[HOUSE_SZ]) {
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
       // if this cell is not solved, cross off possibilities
@@ -66,7 +69,7 @@ static void eliminate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], const uint16_t row[HOU
   }
 }
 
-static void singles(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+static void singles() {
   // Look for hidden singles in each row
   for (int i = 0; i < HOUSE_SZ; i++) {
     int opts_count[HOUSE_SZ];
@@ -165,7 +168,7 @@ static void singles(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
 
 // Use naked pairs strategy to eliminate further options
 // Naked pair: two cells in same group that have only two identical possibilities
-static void naked_pairs(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+static void naked_pairs() {
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
       if (bit_count(cells[i][j]) == 2) {
@@ -219,7 +222,7 @@ static void naked_pairs(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
 
 // Apply hidden pairs strategy: look for pairs of cells in each group
 // that are the only ones that can have 2 options
-static void hidden_pairs(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+static void hidden_pairs() {
 
   // Look for hidden pairs in each row
   for (int i = 0; i < HOUSE_SZ; i++) {
@@ -349,7 +352,7 @@ static void hidden_pairs(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
 
 // Claiming pairs strategy: Find pairs of cells in the same row/column
 // that are in the same square, and eliminate that candidate from the square
-static void claiming_pairs(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+static void claiming_pairs() {
   // Look for claiming pairs in each row
   for (int i = 0; i < HOUSE_SZ; i++) {
     // Count number of cells that can hold each number
@@ -444,7 +447,7 @@ static void claiming_pairs(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
 // Pointing pairs strategy: Within a sqaure, find pairs of cells in the same
 // row/column that are the only two that can have a number, eliminate this
 // option from the row/column
-static void pointing_pairs(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+static void pointing_pairs() {
   // Look for pointing pairs in each square
   for (int z = 0; z < HOUSE_SZ; z++) {
     // Count number of cells that can hold each number
@@ -514,7 +517,7 @@ static void pointing_pairs(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
 
 // X-Wing strategy: An x-wing pattern is formed by two houses that have the same
 // candidate pair in the same rows/columns. Eliminate candidate from rows/columns.
-static void x_wing(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+static void x_wing() {
 
   // Row
   // Build pair vectors for each row
@@ -782,7 +785,7 @@ static void x_wing(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
 }
 
 // Naked triplets strategy: same as pairs, but must be a group of three cells
-static void naked_triplets(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+static void naked_triplets() {
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
       // If cell solved, continue
@@ -844,7 +847,6 @@ int main(int argc, char **argv) {
   }
 
   // Initialize bitvectors of cell possibilites
-  uint16_t cells[HOUSE_SZ][HOUSE_SZ]; // only the first 9 bits will be used
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
       cells[i][j] = (1 << HOUSE_SZ) - 1;
@@ -888,22 +890,22 @@ int main(int argc, char **argv) {
   memset(&colfin, 0, HOUSE_SZ * sizeof(uint16_t));
   memset(&sqrfin, 0, HOUSE_SZ * sizeof(uint16_t));
 
-  update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, sqrfin);
+  update_solved(rowfin, colfin, sqrfin);
 
   for (int i = 0; i < 15; i++) {
     // Do one round of elimination
-    eliminate(cells, rowfin, colfin, sqrfin);
-    singles(cells);
+    eliminate(rowfin, colfin, sqrfin);
+    singles();
 
-    hidden_pairs(cells);
-    naked_pairs(cells);
-    pointing_pairs(cells);
-    claiming_pairs(cells);
-    x_wing(cells);
+    hidden_pairs();
+    naked_pairs();
+    pointing_pairs();
+    claiming_pairs();
+    x_wing();
 
-    naked_triplets(cells);
+    naked_triplets();
 
-    update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, sqrfin);
+    update_solved(rowfin, colfin, sqrfin);
     if (is_solved(rowfin, colfin, sqrfin)) {
       printf("Solved in %d iterations\n", i);
       return 0;
