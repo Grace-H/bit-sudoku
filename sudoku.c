@@ -12,22 +12,22 @@
 // 2D array of bitvectors representing candidates
 static uint16_t cells[HOUSE_SZ][HOUSE_SZ]; // only the first 9 bits of each will be used
 
-// Get square number (0->9 reading left-right top-bottom) from i,j coordinates
-// Square index is i rounded down to nearest multiple of cell size + j divided by cell size
-static inline int sqr_index(int i, int j) {
+// Get block number (0->9 reading left-right top-bottom) from i,j coordinates
+// Block index is i rounded down to nearest multiple of cell size + j divided by cell size
+static inline int blk_index(int i, int j) {
   return (i / BLK_WIDTH) * BLK_WIDTH + j / BLK_WIDTH;
 }
 
-// Get i,j coordinates of top left cell in a square from its index
-static void sqr_coords(int n, int *i, int *j) {
+// Get i,j coordinates of top left cell in a block from its index
+static void blk_coords(int n, int *i, int *j) {
   *i = (n / BLK_WIDTH) * BLK_WIDTH;
   *j = (n % BLK_WIDTH) * BLK_WIDTH;
 }
 
-// Update which values in each row, column, and square have been solved
+// Update which values in each row, column, and block have been solved
 // Set bit indicates value exists in region
 static void update_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ],
-    uint16_t sqr[HOUSE_SZ]) {
+    uint16_t blk[HOUSE_SZ]) {
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
       uint16_t c = cells[i][j];
@@ -35,18 +35,18 @@ static void update_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ],
       if (!(c & (c - 1))) {
         row[i] |= c;
         col[j] |= c;
-        sqr[sqr_index(i, j)] |= c;
+        blk[blk_index(i, j)] |= c;
       }
     }
   }
 }
 
-// Check if board is solved - each row/column/square is solved
+// Check if board is solved - each row/column/block is solved
 // if the xor of all cells is 0x1ff (1 bit set)
-int is_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ], uint16_t sqr[HOUSE_SZ]) {
+int is_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ], uint16_t blk[HOUSE_SZ]) {
   uint16_t target = (1 << HOUSE_SZ) - 1;
   for (int i = 0; i < HOUSE_SZ; i++) {
-    if (row[i] != target || col[i] != target || sqr[i] != target) {
+    if (row[i] != target || col[i] != target || blk[i] != target) {
       return 0;
     }
   }
@@ -54,16 +54,16 @@ int is_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ], uint16_t sqr[HOUSE
 }
 
 // Eliminate possibilites for each cell based on what values are already
-// in each row/column/square
+// in each row/column/block
 static void eliminate(const uint16_t row[HOUSE_SZ], const uint16_t col[HOUSE_SZ],
-    const uint16_t sqr[HOUSE_SZ]) {
+    const uint16_t blk[HOUSE_SZ]) {
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
       // if this cell is not solved, cross off possibilities
       if(cells[i][j] & (cells[i][j] - 1)) {
         cells[i][j] &= ~row[i];
         cells[i][j] &= ~col[j];
-        cells[i][j] &= ~sqr[sqr_index(i, j)];
+        cells[i][j] &= ~blk[blk_index(i, j)];
       }
     }
   }
@@ -130,7 +130,7 @@ static void singles() {
     }
   }
 
-  // Square
+  // Block
   for (int z = 0; z < HOUSE_SZ; z++) {
     int opts_count[HOUSE_SZ];
     for (int x = 0; x < HOUSE_SZ; x++) {
@@ -138,7 +138,7 @@ static void singles() {
     }
 
     int z1, z2;
-    sqr_coords(z, &z1, &z2);
+    blk_coords(z, &z1, &z2);
     for (int i = z1; i < z1 + BLK_WIDTH; i++) {
       for (int j = z2; j < z2 + BLK_WIDTH; j++) {
         for (int k = 0; k < HOUSE_SZ; k++) {
@@ -198,9 +198,9 @@ static void naked_pairs() {
           }
         }
 
-        // Square
+        // Block
         int a, b;
-        sqr_coords(sqr_index(i, j), &a, &b);
+        blk_coords(blk_index(i, j), &a, &b);
         for (int k = a; k < a + BLK_WIDTH; k++) {
           for (int l = b; l < b + BLK_WIDTH; l++) {
             if (!(i == k && j == l) && cells[i][j] == cells[k][l]) {
@@ -302,7 +302,7 @@ static void hidden_pairs() {
     }
   }
 
-  /// Square
+  // Block
   for (int z = 0; z < HOUSE_SZ; z++) {
     // Count number of cells that can hold each number
     int opts_count[HOUSE_SZ];
@@ -311,7 +311,7 @@ static void hidden_pairs() {
     }
 
     int z1, z2;
-    sqr_coords(z, &z1, &z2);
+    blk_coords(z, &z1, &z2);
     for (int i = z1; i < z1 + BLK_WIDTH; i++) {
       for (int j = z2; j < z2 + BLK_WIDTH; j++) {
         for (int k = 0; k < HOUSE_SZ; k++) {
@@ -351,7 +351,7 @@ static void hidden_pairs() {
 }
 
 // Claiming pairs strategy: Find pairs of cells in the same row/column
-// that are in the same square, and eliminate that candidate from the square
+// that are in the same block, and eliminate that candidate from the block
 static void claiming_pairs() {
   // Look for claiming pairs in each row
   for (int i = 0; i < HOUSE_SZ; i++) {
@@ -380,12 +380,12 @@ static void claiming_pairs() {
       for (int j = 0; j < HOUSE_SZ; j++) {
         uint16_t inter = cells[i][j] & pairs;
         if (inter) {
-          // Check remainder of intersection with square for other pair
+          // Check remainder of intersection with block for other pair
           for (int k = j + 1; k < j / BLK_WIDTH * BLK_WIDTH + BLK_WIDTH; k++) {
             uint16_t pair = inter & cells[i][k];
             if (pair) {
               int z1, z2;
-              sqr_coords(sqr_index(i, j), &z1, &z2);
+              blk_coords(blk_index(i, j), &z1, &z2);
               for (int a = z1; a < z1 + BLK_WIDTH; a++) {
                 for (int b = z2; b < z2 + BLK_WIDTH; b++) {
                   if (!(a == i && b == j) && !(a == i && b == k)) {
@@ -428,7 +428,7 @@ static void claiming_pairs() {
             uint16_t pair = inter & cells[k][j];
             if (pair) {
               int z1, z2;
-              sqr_coords(sqr_index(i, j), &z1, &z2);
+              blk_coords(blk_index(i, j), &z1, &z2);
               for (int a = z1; a < z1 + BLK_WIDTH; a++) {
                 for (int b = z2; b < z2 + BLK_WIDTH; b++) {
                   if (!(a == i && b == j) && !(a == k && b == j)) {
@@ -448,7 +448,7 @@ static void claiming_pairs() {
 // row/column that are the only two that can have a number, eliminate this
 // option from the row/column
 static void pointing_pairs() {
-  // Look for pointing pairs in each square
+  // Look for pointing pairs in each block
   for (int z = 0; z < HOUSE_SZ; z++) {
     // Count number of cells that can hold each number
     int opts_count[HOUSE_SZ];
@@ -457,7 +457,7 @@ static void pointing_pairs() {
     }
 
     int z1, z2;
-    sqr_coords(z, &z1, &z2);
+    blk_coords(z, &z1, &z2);
     for (int i = z1; i < z1 + BLK_WIDTH; i++) {
       for (int j = z2; j < z2 + BLK_WIDTH; j++) {
         for (int k = 0; k < HOUSE_SZ; k++) {
@@ -647,9 +647,9 @@ static void x_wing() {
   }
 
   // Build pair vectors for each sqaure
-  uint16_t sqr_pairs[HOUSE_SZ];
+  uint16_t blk_pairs[HOUSE_SZ];
   for (int x = 0; x < HOUSE_SZ; x++) {
-    sqr_pairs[x] = 0;
+    blk_pairs[x] = 0;
   }
 
   for (int z = 0; z < HOUSE_SZ; z++) {
@@ -660,7 +660,7 @@ static void x_wing() {
     }
 
     int z1, z2;
-    sqr_coords(z, &z1, &z2);
+    blk_coords(z, &z1, &z2);
     for (int i = z1; i < z1 + BLK_WIDTH; i++) {
       for (int j = z2; j < z2 + BLK_WIDTH; j++) {
         for (int k = 0; k < HOUSE_SZ; k++) {
@@ -672,17 +672,17 @@ static void x_wing() {
     // Make bitvector of numbers that can only go in two cells
     for (int k = 0; k < HOUSE_SZ; k++) {
       if (opts_count[k] == 2) {
-        sqr_pairs[z] |= 1 << k;
+        blk_pairs[z] |= 1 << k;
       }
     }
   }
 
-  // Identify x-wings between squares
+  // Identify x-wings between blocks
   for (int i = 0; i < HOUSE_SZ; i++) {
 
     // Compare horizontally
     for (int j = i + 1; j < (i / BLK_WIDTH) * BLK_WIDTH + BLK_WIDTH; j++) {
-      uint16_t inter = sqr_pairs[i] & sqr_pairs[j];
+      uint16_t inter = blk_pairs[i] & blk_pairs[j];
       for (int n = 0; (inter >> n) != 0; n++) {
         if (!(inter & (1 << n)))
           continue;
@@ -690,7 +690,7 @@ static void x_wing() {
         int row1 = 0, row2 = 0;
         int found = 0;
         int z1, z2;
-        sqr_coords(i, &z1, &z2);
+        blk_coords(i, &z1, &z2);
         for (int a = z1; a < z1 + BLK_WIDTH; a++) {
           for (int b = z2; b < z2 + BLK_WIDTH; b++) {
             if (cells[a][b] & (1 << n)) {
@@ -708,21 +708,21 @@ static void x_wing() {
         if (row1 == row2)
           continue;
 
-        // Do rows match in square j? If so, eliminate from third square
-        sqr_coords(j, &z1, &z2);
+        // Do rows match in block j? If so, eliminate from third block
+        blk_coords(j, &z1, &z2);
         uint16_t row1_or = cells[row1][z2] | cells[row1][z2 + 1] | cells[row1][z2 + 2];
         uint16_t row2_or = cells[row2][z2] | cells[row2][z2 + 1] | cells[row2][z2 + 2];
 
         if ((row1_or & (1 << n)) && (row2_or & (1 << n))) {
-          int elim_square = 0;
+          int elim_blk = 0;
           if (i % BLK_WIDTH)                             // 1,2
-            elim_square = i - 1;
+            elim_blk = i - 1;
           else if (i % BLK_WIDTH == 0 && j % BLK_WIDTH == 1)  // 0,1
-            elim_square = j + 1;
+            elim_blk = j + 1;
           else                                      // 0,2
-            elim_square = i + 1;
+            elim_blk = i + 1;
 
-          sqr_coords(elim_square, &z1, &z2);
+          blk_coords(elim_blk, &z1, &z2);
           for (int b = z2; b < z2 + BLK_WIDTH; b++) {
             cells[row1][b] &= ~(1 << n);
             cells[row2][b] &= ~(1 << n);
@@ -733,7 +733,7 @@ static void x_wing() {
 
     // Compare vertically
     for (int j = i + BLK_WIDTH; j < HOUSE_SZ; j += BLK_WIDTH) {
-      uint16_t inter = sqr_pairs[i] & sqr_pairs[j];
+      uint16_t inter = blk_pairs[i] & blk_pairs[j];
       for (int n = 0; (inter >> n) != 0; n++) {
         if (!(inter & (1 << n)))
           continue;
@@ -741,7 +741,7 @@ static void x_wing() {
         int col1 = 0, col2 = 0;
         int found = 0;
         int z1, z2;
-        sqr_coords(i, &z1, &z2);
+        blk_coords(i, &z1, &z2);
         for (int a = z1; a < z1 + BLK_WIDTH; a++) {
           for (int b = z2; b < z2 + BLK_WIDTH; b++) {
             if (cells[a][b] & (1 << n)) {
@@ -759,21 +759,21 @@ static void x_wing() {
         if (col1 == col2)
           continue;
 
-        // Do columns match in square j? If so, eliminate from third square
-        sqr_coords(j, &z1, &z2);
+        // Do columns match in block j? If so, eliminate from third block
+        blk_coords(j, &z1, &z2);
         uint16_t col1_or = cells[z1][col1] | cells[z1 + 1][col1] | cells[z1 + 2][col1];
         uint16_t col2_or = cells[z1][col2] | cells[z1 + 1][col2] | cells[z1 + 2][col2];
 
         if ((col1_or & (1 << n)) && (col2_or & (1 << n))) {
-          int elim_square = 0;
+          int elim_blk = 0;
           if (i / BLK_WIDTH)
-            elim_square = i - BLK_WIDTH;
+            elim_blk = i - BLK_WIDTH;
           else if (i / BLK_WIDTH == 0 && j / BLK_WIDTH == 1)
-            elim_square = j + BLK_WIDTH;
+            elim_blk = j + BLK_WIDTH;
           else
-            elim_square = i + BLK_WIDTH;
+            elim_blk = i + BLK_WIDTH;
 
-          sqr_coords(elim_square, &z1, &z2);
+          blk_coords(elim_blk, &z1, &z2);
           for (int a = z1; a < z1 + BLK_WIDTH; a++) {
             cells[a][col1] &= ~(1 << n);
             cells[a][col2] &= ~(1 << n);
@@ -833,9 +833,9 @@ static void naked_triplets() {
         }
       }
 
-      // Square
+      // Block
       int z1, z2;
-      sqr_coords(sqr_index(i, j), &z1, &z2);
+      blk_coords(blk_index(i, j), &z1, &z2);
 
       for (int a = i; a < z1 + BLK_WIDTH; a++) {
         for (int b = z2; b < z2 + BLK_WIDTH; b++) {
@@ -917,17 +917,17 @@ int main(int argc, char **argv) {
   // Cross off initial round of bits
   uint16_t rowfin[HOUSE_SZ];
   uint16_t colfin[HOUSE_SZ];
-  uint16_t sqrfin[HOUSE_SZ];
+  uint16_t blkfin[HOUSE_SZ];
 
   memset(&rowfin, 0, HOUSE_SZ * sizeof(uint16_t));
   memset(&colfin, 0, HOUSE_SZ * sizeof(uint16_t));
-  memset(&sqrfin, 0, HOUSE_SZ * sizeof(uint16_t));
+  memset(&blkfin, 0, HOUSE_SZ * sizeof(uint16_t));
 
-  update_solved(rowfin, colfin, sqrfin);
+  update_solved(rowfin, colfin, blkfin);
 
   for (int i = 0; i < 15; i++) {
     // Do one round of elimination
-    eliminate(rowfin, colfin, sqrfin);
+    eliminate(rowfin, colfin, blkfin);
     singles();
 
     hidden_pairs();
@@ -938,8 +938,8 @@ int main(int argc, char **argv) {
 
     naked_triplets();
 
-    update_solved(rowfin, colfin, sqrfin);
-    if (is_solved(rowfin, colfin, sqrfin)) {
+    update_solved(rowfin, colfin, blkfin);
+    if (is_solved(rowfin, colfin, blkfin)) {
       printf("Solved in %d iterations\n", i);
       return 0;
     }

@@ -20,14 +20,14 @@ struct transform {
   uint16_t candidates; // Former candidates of cell
 };
 
-// Get square number (0->9 reading left-right top-bottom) from i,j coordinates
-// Square index is i rounded down to nearest multiple of cell size + j divided by cell size
-static inline int sqr_index(int i, int j) {
+// Get block number (0->9 reading left-right top-bottom) from i,j coordinates
+// Block index is i rounded down to nearest multiple of cell size + j divided by cell size
+static inline int blk_index(int i, int j) {
   return (i / BLK_WIDTH) * BLK_WIDTH + j / BLK_WIDTH;
 }
 
-// Get i,j coordinates of top left cell in a square from its index
-static void sqr_coords(int n, int *i, int *j) {
+// Get i,j coordinates of top left cell in a block from its index
+static void blk_coords(int n, int *i, int *j) {
   *i = (n / BLK_WIDTH) * BLK_WIDTH;
   *j = (n % BLK_WIDTH) * BLK_WIDTH;
 }
@@ -37,15 +37,15 @@ static inline int cell_index(int i, int j) {
   return i * HOUSE_SZ + j;
 }
 
-// Update which values in each row, column, and square have been solved
+// Update which values in each row, column, and block have been solved
 // Set bit indicates value exists in region
 static void update_solved(const uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t row[HOUSE_SZ],
-                          uint16_t col[HOUSE_SZ], uint16_t sqr[HOUSE_SZ]) {
+                          uint16_t col[HOUSE_SZ], uint16_t blk[HOUSE_SZ]) {
 
   for (int i = 0; i < HOUSE_SZ; i++) {
     row[i] = 0;
     col[i] = 0;
-    sqr[i] = 0;
+    blk[i] = 0;
   }
 
   for (int i = 0; i < HOUSE_SZ; i++) {
@@ -55,18 +55,18 @@ static void update_solved(const uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t row
       if (!(c & (c - 1))) {
         row[i] |= c;
         col[j] |= c;
-        sqr[sqr_index(i, j)] |= c;
+        blk[blk_index(i, j)] |= c;
       }
     }
   }
 }
 
-// Check if board is solved - each row/column/square is solved
+// Check if board is solved - each row/column/block is solved
 // if the xor of all cells is 0x1ff (1 bit set)
-int is_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ], uint16_t sqr[HOUSE_SZ]) {
+int is_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ], uint16_t blk[HOUSE_SZ]) {
   uint16_t target = (1 << HOUSE_SZ) - 1;
   for (int i = 0; i < HOUSE_SZ; i++) {
-    if (row[i] != target || col[i] != target || sqr[i] != target) {
+    if (row[i] != target || col[i] != target || blk[i] != target) {
       return 0;
     }
   }
@@ -132,13 +132,13 @@ int main(int argc, char **argv) {
   // Cross off candidates in all unsolved cells
   uint16_t rowfin[HOUSE_SZ];
   uint16_t colfin[HOUSE_SZ];
-  uint16_t sqrfin[HOUSE_SZ];
+  uint16_t blkfin[HOUSE_SZ];
 
   memset(&rowfin, 0, HOUSE_SZ * sizeof(uint16_t));
   memset(&colfin, 0, HOUSE_SZ * sizeof(uint16_t));
-  memset(&sqrfin, 0, HOUSE_SZ * sizeof(uint16_t));
+  memset(&blkfin, 0, HOUSE_SZ * sizeof(uint16_t));
 
-  update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, sqrfin);
+  update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
 
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
@@ -146,7 +146,7 @@ int main(int argc, char **argv) {
       if(cells[i][j] & (cells[i][j] - 1)) {
         cells[i][j] &= ~rowfin[i];
         cells[i][j] &= ~colfin[j];
-        cells[i][j] &= ~sqrfin[sqr_index(i, j)];
+        cells[i][j] &= ~blkfin[blk_index(i, j)];
       }
     }
   }
@@ -164,7 +164,7 @@ int main(int argc, char **argv) {
   stack_init(&transforms);
 
   int n = 0; // Current location in grid
-  while (n < N_CELLS && !is_solved(rowfin, colfin, sqrfin)) {
+  while (n < N_CELLS && !is_solved(rowfin, colfin, blkfin)) {
     while (is_valid((const uint16_t(*)[HOUSE_SZ]) cells)) {
       // Find next unsolved cell
       int i = n / HOUSE_SZ;
@@ -209,7 +209,7 @@ int main(int argc, char **argv) {
       }
 
       int z1, z2;
-      sqr_coords(sqr_index(i, j), &z1, &z2);
+      blk_coords(blk_index(i, j), &z1, &z2);
       for (int a = z1; a < z1 + BLK_WIDTH; a++) {
         for (int b = z2; b < z2 + BLK_WIDTH; b++) {
           if (!(a == i && b == j)) {
@@ -219,7 +219,7 @@ int main(int argc, char **argv) {
       }
 
       // This change may have resulted in other cells being solved
-      update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, sqrfin);
+      update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
 
       for (int a = 0; a < HOUSE_SZ; a++) {
         for (int b = 0; b < HOUSE_SZ; b++) {
@@ -227,7 +227,7 @@ int main(int argc, char **argv) {
           if(cells[a][b] & (cells[a][b] - 1)) {
             cells[a][b] &= ~rowfin[a];
             cells[a][b] &= ~colfin[b];
-            cells[a][b] &= ~sqrfin[sqr_index(a, b)];
+            cells[a][b] &= ~blkfin[blk_index(a, b)];
           }
         }
       }
@@ -258,7 +258,7 @@ int main(int argc, char **argv) {
       }
 
       int z1, z2;
-      sqr_coords(sqr_index(i, j), &z1, &z2);
+      blk_coords(blk_index(i, j), &z1, &z2);
       for (int a = i; a < z1 + BLK_WIDTH; a++) {
         for (int b = z2; b < z2 + BLK_WIDTH; b++) {
           if ((a == i && b > j) || a > i) {
@@ -269,14 +269,14 @@ int main(int argc, char **argv) {
         }
       }
 
-      update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, sqrfin);
+      update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
 
       uint16_t nine = (1 << HOUSE_SZ) - 1;
       for (int a = 0; a < HOUSE_SZ; a++) {
         for (int b = 0; b < HOUSE_SZ; b++) {
           // if this cell is not solved, cross off possibilities
           if(cell_index(a, b) > n && cells[a][b] != ref[a][b]) {
-            cells[a][b] = (nine & (~rowfin[a] | ~colfin[b] | ~sqrfin[sqr_index(a, b)]));
+            cells[a][b] = (nine & (~rowfin[a] | ~colfin[b] | ~blkfin[blk_index(a, b)]));
           }
         }
       }
@@ -319,7 +319,7 @@ int main(int argc, char **argv) {
         }
 
         int z1, z2;
-        sqr_coords(sqr_index(i, j), &z1, &z2);
+        blk_coords(blk_index(i, j), &z1, &z2);
         for (int a = z1; a < z1 + BLK_WIDTH; a++) {
           for (int b = z2; b < z2 + BLK_WIDTH; b++) {
             if (!(a == i && b == j)) {
@@ -331,7 +331,7 @@ int main(int argc, char **argv) {
       }
     }
 
-    update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, sqrfin);
+    update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
   }
 
   printf("Solved");
