@@ -199,15 +199,18 @@ static void naked_pairs() {
         }
 
         // Block
-        int a, b;
-        blk_coords(blk_index(i, j), &a, &b);
-        for (int k = a; k < a + BLK_WIDTH; k++) {
-          for (int l = b; l < b + BLK_WIDTH; l++) {
-            if (!(i == k && j == l) && cells[i][j] == cells[k][l]) {
-              for (int z1 = a; z1 < a + BLK_WIDTH; z1++) {
-                for (int z2 = b; z2 < b + BLK_WIDTH; z2++) {
-                  if (cells[i][j] != cells[z1][z2]) {
-                    cells[z1][z2] &= ~cells[i][j];
+        int z1, z2;
+        blk_coords(blk_index(i, j), &z1, &z2);
+        for (int a = i; a < z1 + BLK_WIDTH; a++) {
+          for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+            if (a == i && b <= j)
+              continue;
+
+            if (cells[i][j] == cells[a][b]) {
+              for (int k = z1; k < z1 + BLK_WIDTH; k++) {
+                for (int l = z2; l < z2 + BLK_WIDTH; l++) {
+                  if (cells[i][j] != cells[k][l]) {
+                    cells[k][l] &= ~cells[i][j];
                   }
                 }
               }
