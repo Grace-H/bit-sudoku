@@ -253,9 +253,9 @@ static void hidden_pairs() {
       // Find pairs of cells that share two of the possibilities
       for (int j = 0; j < HOUSE_SZ; j++) {
         uint16_t inter = cells[i][j] & pairs;
-        if (bit_count(inter) == 2) {
+        if (bit_count(inter) >= 2) {
           for (int x = j + 1; x < HOUSE_SZ; x++) {
-            if (inter == (cells[i][x] & pairs)) {
+            if (bit_count(inter & cells[i][x]) == 2) {
               cells[i][j] = inter;
               cells[i][x] = inter;
               pairs &= ~inter;
@@ -292,9 +292,9 @@ static void hidden_pairs() {
       // Find pairs of cells that share two of the possibilities
       for (int i = 0; i < HOUSE_SZ; i++) {
         uint16_t inter = cells[i][j] & pairs;
-        if (bit_count(inter) == 2) {
+        if (bit_count(inter) >= 2) {
           for (int y = i + 1; y < HOUSE_SZ; y++) {
-            if (inter == (cells[y][j] & pairs)) {
+            if (bit_count(inter & cells[y][j]) == 2) {
               cells[i][j] = inter;
               cells[y][j] = inter;
               pairs &= ~inter;
@@ -336,10 +336,11 @@ static void hidden_pairs() {
       for (int i = z1; i < z1 + BLK_WIDTH; i++) {
         for (int j = z2; j < z2 + BLK_WIDTH; j++) {
           uint16_t inter = cells[i][j] & pairs;
-          if (bit_count(inter) == 2) {
+          if (bit_count(inter) >= 2) {
             for (int x = z1; x < z1 + BLK_WIDTH; x++) {
               for (int y = z2; y < z2 + BLK_WIDTH; y++) {
-                if (!(i == x && j == y) && inter == (cells[x][y] & pairs)) {
+                if (!(i == x && j == y) &&
+                    bit_count(inter & cells[x][y]) >= 2) {
                   cells[i][j] = inter;
                   cells[x][y] = inter;
                   pairs &= ~inter;
