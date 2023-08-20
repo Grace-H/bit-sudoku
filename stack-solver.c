@@ -18,6 +18,7 @@ struct transform {
   int i; // Coordinates of cell transformed
   int j;
   uint16_t candidates; // Former candidates of cell
+  uint16_t tried;      // Candidates that have been tried as solutions
 };
 
 // Get block number (0->9 reading left-right top-bottom) from i,j coordinates
@@ -190,6 +191,7 @@ int main(int argc, char **argv) {
       trans->i = i;
       trans->j = j;
       trans->candidates = cells[i][j];
+      trans->tried = 1 << solution;
       cells[i][j] &= 1 << solution;
       stack_push(&transforms, trans);
 
@@ -234,10 +236,20 @@ int main(int argc, char **argv) {
     }
 
     // Revert changes back to valid state
-    // Change previous transformation, or roll back as many as needed
-    int reverted = 0;
-    while (!reverted) {
-      struct transform *trans = stack_pop(&transforms);
+    // Identify first prior transformation on a cell with untried candidates
+    struct transform *trans = NULL;
+    do {
+      if (trans) {
+        free(trans);
+      }
+
+      trans = stack_pop(&transforms);
+
+      if (!trans) {
+        LOG("No remaining transformations--unable to revert further");
+        exit(1);
+      }
+
       int i = trans->i;
       int j = trans->j;
       n = i * HOUSE_SZ + j;
@@ -280,56 +292,9 @@ int main(int argc, char **argv) {
           }
         }
       }
+    } while ((trans->candidates & (~trans->tried)) == 0);
 
-      // Try alternate transformation on the same cell
-      cells[i][j] = trans->candidates;
-      int shift = 0;
-      while (solution >> shift) {
-        shift++;
-      }
-      shift++;
-      while (shift < HOUSE_SZ && !((cells[i][j] >> shift) & 1)) {
-        // XXX off by one? ^
-        shift++;
-      }
-
-      if (shift >= HOUSE_SZ) {
-        free(trans);
-        // TODO - need to try alternate transformation with the last one
-        // because otherwise puzzle appears valid and advance step repeats
-        // identically
-      } else {
-        // Try alternate transformation
-        cells[i][j] &= 1 << shift;
-        stack_push(&transforms, trans);
-
-        // Update houses
-        uint16_t elim = ~(1 << shift);
-
-        for (int x = 0; x < HOUSE_SZ; x++) {
-          if (x != j) {
-            cells[i][x] &= elim;
-          }
-        }
-
-        for (int y = 0; y < HOUSE_SZ; y++) {
-          if (y != i) {
-            cells[y][j] &= elim;
-          }
-        }
-
-        int z1, z2;
-        blk_coords(blk_index(i, j), &z1, &z2);
-        for (int a = z1; a < z1 + BLK_WIDTH; a++) {
-          for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-            if (!(a == i && b == j)) {
-              cells[a][b] &= elim;
-            }
-          }
-        }
-        reverted = 1;
-      }
-    }
+    // TODO Try alternate transformation on the same cell
 
     update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
   }
