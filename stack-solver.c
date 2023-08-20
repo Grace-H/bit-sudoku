@@ -220,12 +220,11 @@ int main(int argc, char **argv) {
         }
       }
 
-      // This change may have resulted in other cells being solved
+      // Other cells in the same house may now be solved
       update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
 
       for (int a = 0; a < HOUSE_SZ; a++) {
         for (int b = 0; b < HOUSE_SZ; b++) {
-          // if this cell is not solved, cross off possibilities
           if(cells[a][b] & (cells[a][b] - 1)) {
             cells[a][b] &= ~rowfin[a];
             cells[a][b] &= ~colfin[b];
@@ -235,7 +234,7 @@ int main(int argc, char **argv) {
       }
     }
 
-    // Revert changes back to valid state
+    // Revert changes and attempt a different solution
     // Identify first prior transformation on a cell with untried candidates
     struct transform *trans = NULL;
     do {
