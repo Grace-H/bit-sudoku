@@ -88,7 +88,7 @@ int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
 
 // Eliminate as candidate value of solved cell & propagate any other
 // solved cells process creates
-void propagate_solution(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
+void propagate_rm_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   uint16_t elim = ~cells[i][j];
 
   for (int x = 0; x < HOUSE_SZ; x++) {
@@ -96,7 +96,7 @@ void propagate_solution(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
       uint16_t old_candidates = cells[i][x];
       cells[i][x] &= elim;
       if ((old_candidates & (old_candidates - 1)) && !(cells[i][x] & (cells[i][x] - 1))) {
-        propagate_solution(cells, i, x);
+        propagate_rm_candidate(cells, i, x);
       }
     }
   }
@@ -106,7 +106,7 @@ void propagate_solution(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
       uint16_t old_candidates = cells[y][j];
       cells[y][j] &= elim;
       if ((old_candidates & (old_candidates - 1)) && !(cells[y][j] & (cells[y][j] - 1))) {
-        propagate_solution(cells, y, j);
+        propagate_rm_candidate(cells, y, j);
       }
     }
   }
@@ -119,7 +119,7 @@ void propagate_solution(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
         uint16_t old_candidates = cells[a][b];
         cells[a][b] &= elim;
         if ((old_candidates & (old_candidates - 1)) && !(cells[a][b] & (cells[a][b] - 1))) {
-          propagate_solution(cells, a, b);
+          propagate_rm_candidate(cells, a, b);
         }
       }
     }
