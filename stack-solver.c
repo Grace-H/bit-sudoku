@@ -124,8 +124,47 @@ void propagate_solution(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
       }
     }
   }
-
 }
+
+void propagate_add_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j, uint16_t solution) {
+  // Add as candidate in cells > n that weren't solved in original
+  for (int x = j + 1; x < HOUSE_SZ; x++) {
+    if (cells[i][x] != ref[i][x]) {
+      uint16_t old_candidates = cells[i][x];
+      cells[i][x] |= solution;
+      if (!(old_candidates & (old_candidates - 1))) {
+        propagate_add_candidate(ref, cells, i, x, old_candidates);
+      }
+    }
+  }
+
+  for (int y = i + 1; y < HOUSE_SZ; y++) {
+    if (cells[y][j] != ref[y][j]) {
+      uint16_t old_candidates = cells[y][j];
+      cells[y][j] |= solution;
+      if (!(old_candidates & (old_candidates - 1))) {
+        propagate_add_candidate(ref, cells, y, j, old_candidates);
+      }
+    }
+  }
+
+  int z1, z2;
+  blk_coords(blk_index(i, j), &z1, &z2);
+  for (int a = i; a < z1 + BLK_WIDTH; a++) {
+    for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+      if ((a == i && b > j) || a > i) {
+        if (cells[a][b] != ref[a][b]) {
+          uint16_t old_candidates = cells[a][b];
+          cells[a][b] |= solution;
+          if (!(old_candidates & (old_candidates - 1))) {
+            propagate_add_candidate(ref, cells, a, b, old_candidates);
+          }
+        }
+      }
+    }
+  }
+}
+
 int main(int argc, char **argv) {
 
   if (argc != 2) {
@@ -235,20 +274,9 @@ int main(int argc, char **argv) {
       cells[i][j] &= 1 << solution;
       stack_push(&transforms, trans);
 
-      propagate_solution(cells, i, j);
+      propagate_rm_candidate(cells, i, j);
 
-      // Other cells in the same house may now be solved
       update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
-
-      for (int a = 0; a < HOUSE_SZ; a++) {
-        for (int b = 0; b < HOUSE_SZ; b++) {
-          if(cells[a][b] & (cells[a][b] - 1)) {
-            cells[a][b] &= ~rowfin[a];
-            cells[a][b] &= ~colfin[b];
-            cells[a][b] &= ~blkfin[blk_index(a, b)];
-          }
-        }
-      }
     }
 
     // Revert changes and attempt a different solution
@@ -272,42 +300,9 @@ int main(int argc, char **argv) {
       uint16_t solution = cells[i][j]; // Current, invalid solution
 
       // Reverse effect on houses
-      // Add as candidate in cells > n that weren't solved in original
-      for (int x = j + 1; x < HOUSE_SZ; x++) {
-        if (cells[i][x] != ref[i][x]) {
-          cells[i][x] |= solution;
-        }
-      }
-
-      for (int y = i + 1; y < HOUSE_SZ; y++) {
-        if (cells[y][j] != ref[y][j]) {
-          cells[y][j] |= solution;
-        }
-      }
-
-      int z1, z2;
-      blk_coords(blk_index(i, j), &z1, &z2);
-      for (int a = i; a < z1 + BLK_WIDTH; a++) {
-        for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-          if ((a == i && b > j) || a > i) {
-            if (cells[a][b] != ref[a][b]) {
-              cells[a][b] |= solution;
-            }
-          }
-        }
-      }
+      propagate_add_candidate(ref, cells, i, j, solution);
 
       update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
-
-      uint16_t nine = (1 << HOUSE_SZ) - 1;
-      for (int a = 0; a < HOUSE_SZ; a++) {
-        for (int b = 0; b < HOUSE_SZ; b++) {
-          // if this cell is not solved, cross off possibilities
-          if(cell_index(a, b) > n && cells[a][b] != ref[a][b]) {
-            cells[a][b] = (nine & (~rowfin[a] | ~colfin[b] | ~blkfin[blk_index(a, b)]));
-          }
-        }
-      }
     } while ((trans->candidates & (~trans->tried)) == 0);
 
     // TODO Try alternate transformation on the same cell
