@@ -86,6 +86,46 @@ int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
   return 1;
 }
 
+// Eliminate as candidate value of solved cell & propagate any other
+// solved cells process creates
+void propagate_solution(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
+  uint16_t elim = ~cells[i][j];
+
+  for (int x = 0; x < HOUSE_SZ; x++) {
+    if (x != j) {
+      uint16_t old_candidates = cells[i][x];
+      cells[i][x] &= elim;
+      if ((old_candidates & (old_candidates - 1)) && !(cells[i][x] & (cells[i][x] - 1))) {
+        propagate_solution(cells, i, x);
+      }
+    }
+  }
+
+  for (int y = 0; y < HOUSE_SZ; y++) {
+    if (y != i) {
+      uint16_t old_candidates = cells[y][j];
+      cells[y][j] &= elim;
+      if ((old_candidates & (old_candidates - 1)) && !(cells[y][j] & (cells[y][j] - 1))) {
+        propagate_solution(cells, y, j);
+      }
+    }
+  }
+
+  int z1, z2;
+  blk_coords(blk_index(i, j), &z1, &z2);
+  for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+    for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+      if (!(a == i && b == j)) {
+        uint16_t old_candidates = cells[a][b];
+        cells[a][b] &= elim;
+        if ((old_candidates & (old_candidates - 1)) && !(cells[a][b] & (cells[a][b] - 1))) {
+          propagate_solution(cells, a, b);
+        }
+      }
+    }
+  }
+
+}
 int main(int argc, char **argv) {
 
   if (argc != 2) {
@@ -195,30 +235,7 @@ int main(int argc, char **argv) {
       cells[i][j] &= 1 << solution;
       stack_push(&transforms, trans);
 
-      // Update houses
-      uint16_t elim = ~(1 << solution);
-
-      for (int x = 0; x < HOUSE_SZ; x++) {
-        if (x != j) {
-          cells[i][x] &= elim;
-        }
-      }
-
-      for (int y = 0; y < HOUSE_SZ; y++) {
-        if (y != i) {
-          cells[y][j] &= elim;
-        }
-      }
-
-      int z1, z2;
-      blk_coords(blk_index(i, j), &z1, &z2);
-      for (int a = z1; a < z1 + BLK_WIDTH; a++) {
-        for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-          if (!(a == i && b == j)) {
-            cells[a][b] &= elim;
-          }
-        }
-      }
+      propagate_solution(cells, i, j);
 
       // Other cells in the same house may now be solved
       update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
