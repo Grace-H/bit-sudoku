@@ -98,10 +98,13 @@ static void eliminate(const uint16_t row[HOUSE_SZ], const uint16_t col[HOUSE_SZ]
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
       // if this cell is not solved, cross off possibilities
-      if(cells[i][j] & (cells[i][j] - 1)) {
+      if(cells[i][j]) {
         cells[i][j] &= ~row[i];
         cells[i][j] &= ~col[j];
         cells[i][j] &= ~blk[blk_index(i, j)];
+        if (!(cells[i][j] & (cells[i][j] - 1))) {
+          remove_candidate(i, j);
+        }
       }
     }
   }
@@ -133,6 +136,7 @@ static void singles() {
       if (cells[i][j] & singles) {
         cells[i][j] &= singles;
         singles ^= cells[i][j]; // Cross off as safeguard
+        remove_candidate(i, j);
       }
     }
   }
@@ -164,6 +168,7 @@ static void singles() {
       if (cells[i][j] & singles) {
         cells[i][j] &= singles;
         singles ^= cells[i][j]; // Cross off as safeguard
+        remove_candidate(i, j);
       }
     }
   }
@@ -198,6 +203,7 @@ static void singles() {
         if (cells[i][j] & singles) {
           cells[i][j] &= singles;
           singles ^= cells[i][j]; // Cross off as safeguard
+          remove_candidate(i, j);
         }
       }
     }
@@ -216,8 +222,11 @@ static void naked_pairs() {
           // same pair
           if (cells[i][j] == cells[i][k]) {
             for (int x = 0; x < HOUSE_SZ; x++) {
-              if (x != j && x != k) {
+              if (cells[i][x] && x != j && x != k) {
                 cells[i][x] &= ~cells[i][j];
+                if(!(cells[i][x] & (cells[i][x] - 1))) {
+                  remove_candidate(i, x);
+                }
               }
             }
             break; // there won't (shouldn't) be another pair
@@ -228,8 +237,11 @@ static void naked_pairs() {
         for (int k = i + 1; k < HOUSE_SZ; k++) {
           if (cells[i][j] == cells[k][j]) {
             for (int y = 0; y < HOUSE_SZ; y++) {
-              if (y != i && y != k) {
+              if (cells[y][j] && y != i && y != k) {
                 cells[y][j] &= ~cells[i][j];
+                if (!(cells[y][j] & (cells[y][j] - 1))) {
+                  remove_candidate(y, j);
+                }
               }
             }
             break;
@@ -247,8 +259,11 @@ static void naked_pairs() {
             if (cells[i][j] == cells[a][b]) {
               for (int k = z1; k < z1 + BLK_WIDTH; k++) {
                 for (int l = z2; l < z2 + BLK_WIDTH; l++) {
-                  if (cells[i][j] != cells[k][l]) {
+                  if (cells[k][l] && cells[i][j] != cells[k][l]) {
                     cells[k][l] &= ~cells[i][j];
+                    if (!(cells[k][l] & (cells[k][l] - 1))) {
+                      remove_candidate(k, l);
+                    }
                   }
                 }
               }
@@ -430,8 +445,11 @@ static void claiming_pairs() {
               blk_coords(blk_index(i, j), &z1, &z2);
               for (int a = z1; a < z1 + BLK_WIDTH; a++) {
                 for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-                  if (!(a == i && b == j) && !(a == i && b == k)) {
+                  if (cells[a][b] && !(a == i && b == j) && !(a == i && b == k)) {
                     cells[a][b] &= ~pair;
+                    if (!(cells[a][b] & (cells[a][b] - 1))) {
+                      remove_candidate(a, b);
+                    }
                   }
                 }
               }
@@ -473,8 +491,11 @@ static void claiming_pairs() {
               blk_coords(blk_index(i, j), &z1, &z2);
               for (int a = z1; a < z1 + BLK_WIDTH; a++) {
                 for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-                  if (!(a == i && b == j) && !(a == k && b == j)) {
+                  if (cells[a][b] && !(a == i && b == j) && !(a == k && b == j)) {
                     cells[a][b] &= ~pair;
+                    if (!(cells[a][b] & (cells[a][b] - 1))) {
+                      remove_candidate(a, b);
+                    }
                   }
                 }
               }
@@ -530,8 +551,11 @@ static void pointing_pairs() {
               uint16_t pair = inter & cells[y][j];
               if (pair) {
                 for (int k = 0; k < HOUSE_SZ; k++) {
-                  if (k != y && k != i) {
+                  if (cells[k][j] && k != y && k != i) {
                     cells[k][j] &= ~pair;
+                    if (!(cells[k][j] & (cells[k][j] - 1))) {
+                      remove_candidate(k, j);
+                    }
                   }
                 }
                 inter &= ~pair; // Pair is found
@@ -543,8 +567,11 @@ static void pointing_pairs() {
               uint16_t pair = inter & cells[i][x];
               if (pair) {
                 for (int k = 0; k < HOUSE_SZ; k++) {
-                  if (k != x && k != j) {
+                  if (cells[i][k] && k != x && k != j) {
                     cells[i][k] &= ~pair;
+                    if (!(cells[i][k] & (cells[i][k] - 1))) {
+                      remove_candidate(i, k);
+                    }
                   }
                 }
                 inter &= ~pair; // Pair is found
@@ -617,7 +644,14 @@ static void x_wing() {
           for (int k = 0; k < HOUSE_SZ; k++) {
             if (k != i && k != j) {
               cells[k][col1] &= ~(1 << n);
+              if (cells[k][col1] && !(cells[k][col1] & (cells[k][col1] - 1))) {
+                remove_candidate(k, col1);
+              }
+
               cells[k][col2] &= ~(1 << n);
+              if (cells[k][col2] && !(cells[k][col2] & (cells[k][col2] - 1))) {
+                remove_candidate(k, col2);
+              }
             }
           }
         }
@@ -680,7 +714,14 @@ static void x_wing() {
           for (int k = 0; k < HOUSE_SZ; k++) {
             if (k != i && k != j) {
               cells[row1][k] &= ~(1 << n);
+              if (cells[row1][k] && !(cells[row1][k] & (cells[row1][k] - 1))) {
+                remove_candidate(row1, k);
+              }
+
               cells[row2][k] &= ~(1 << n);
+              if (cells[row2][k] && !(cells[row2][k] & (cells[row2][k] - 1))) {
+                remove_candidate(row2, k);
+              }
             }
           }
         }
@@ -767,7 +808,14 @@ static void x_wing() {
           blk_coords(elim_blk, &z1, &z2);
           for (int b = z2; b < z2 + BLK_WIDTH; b++) {
             cells[row1][b] &= ~(1 << n);
+            if (cells[row1][b] && !(cells[row1][b] & (cells[row1][b] - 1))) {
+              remove_candidate(row1, b);
+            }
+
             cells[row2][b] &= ~(1 << n);
+            if (cells[row2][b] && !(cells[row2][b] & (cells[row2][b] - 1))) {
+              remove_candidate(row2, b);
+            }
           }
         }
       }
@@ -818,7 +866,14 @@ static void x_wing() {
           blk_coords(elim_blk, &z1, &z2);
           for (int a = z1; a < z1 + BLK_WIDTH; a++) {
             cells[a][col1] &= ~(1 << n);
+            if (cells[a][col1] && !(cells[a][col1] & (cells[a][col1] - 1))) {
+              remove_candidate(a, col1);
+            }
+
             cells[a][col2] &= ~(1 << n);
+            if (cells[a][col2] && !(cells[a][col2] & (cells[a][col2] - 1))) {
+              remove_candidate(a, col2);
+            }
           }
         }
       }
@@ -831,23 +886,26 @@ static void naked_triplets() {
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
       // If cell solved, continue
-      if (!(cells[i][j] & (cells[i][j] - 1)))
+      if (!cells[i][j])
         continue;
 
       // Row
       for (int x1 = j + 1; x1 < HOUSE_SZ; x1++) {
-        if (!(cells[i][x1] & (cells[i][x1] - 1)))
+        if (!cells[i][x1])
           continue;
 
         for (int x2 = x1 + 1; x2 < HOUSE_SZ; x2++) {
-          if (!(cells[i][x2] & (cells[i][x2] - 1)))
+          if (!cells[i][x2])
             continue;
 
           uint16_t un = cells[i][j] | cells[i][x1] | cells[i][x2];
           if (bit_count(un) == 2) {
             for(int k = 0; k < HOUSE_SZ; k++) {
-              if (k != j && k != x1 && k != x2) {
+              if (cells[i][k] && k != j && k != x1 && k != x2) {
                 cells[i][k] &= ~un;
+                if (!(cells[i][k] & (cells[i][k] - 1))) {
+                  remove_candidate(i, k);
+                }
               }
             }
             // XXX Way to jump to next section (column)? There won't be another triplet
@@ -857,18 +915,21 @@ static void naked_triplets() {
 
       // Column - XXX Don't need to iterate all the way to end of column
       for (int y1 = i + 1; y1 < HOUSE_SZ; y1++) {
-        if (!(cells[y1][j] & (cells[y1][j] - 1)))
+        if (!cells[y1][j])
           continue;
 
         for (int y2 = y1 + 1; y2 < HOUSE_SZ; y2++) {
-          if (!(cells[y2][j] & (cells[y2][j] - 1)))
+          if (!cells[y2][j])
             continue;
 
           uint16_t un = cells[i][j] | cells[y1][j] | cells[y2][j];
           if (bit_count(un) == 3) {
             for (int k = 0; k < HOUSE_SZ; k++) {
-              if (k != i && k != y1 && k != y2) {
+              if (cells[k][j] && k != i && k != y1 && k != y2) {
                 cells[k][j] &= ~un;
+                if (!(cells[k][j] & (cells[k][j] - 1))) {
+                  remove_candidate(k, j);
+                }
               }
             }
           }
@@ -884,7 +945,7 @@ static void naked_triplets() {
           if (a == i && b <= j)
             continue;
 
-          if (!(cells[a][b] & (cells[a][b] - 1)))
+          if (!cells[a][b])
             continue;
 
           for (int c = a; c < z1 + BLK_WIDTH; c++) {
@@ -892,16 +953,19 @@ static void naked_triplets() {
               if (c == a && d <= b)
                 continue;
 
-              if (!(cells[c][d] & (cells[c][d] - 1)))
+              if (!cells[c][d])
                 continue;
 
               uint16_t un = cells[i][j] | cells[a][b] | cells[c][d];
               if (bit_count(un) == 3) {
                 for (int k = z1; k < z1 + BLK_WIDTH; k++) {
                   for (int l = z2; l < z2 + BLK_WIDTH; l++) {
-                    if (!((k == i && l == j) || (k == a && l == b) ||
+                    if (cells[k][l] && !((k == i && l == j) || (k == a && l == b) ||
                           (k == c && l == d))) {
                       cells[k][l] &= ~un;
+                      if (!(cells[k][l] & (cells[k][k] - 1))) {
+                        remove_candidate(k, l);
+                      }
                     }
                   }
                 }
@@ -949,6 +1013,7 @@ int main(int argc, char **argv) {
         char d = buf[j];
         if (d >= '1' && d <= '9') {
           cells[i][j] = 1 << (d - '1');
+          remove_candidate(i, j);
         } else {
           fprintf(stderr, "Invalid digit: %d\n", d);
           return 1;
