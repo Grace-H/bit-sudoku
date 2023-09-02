@@ -1,5 +1,5 @@
 /* sudoku.c
- * Sudoku solver, representing cell possibilities as a bitvector
+ * Sudoku solver, representing cell candidates as bitvectors
  */
 
 #include <stdio.h>
@@ -25,7 +25,7 @@ static void blk_coords(int n, int *i, int *j) {
 }
 
 // Update which values in each row, column, and block have been solved
-// Set bit indicates value exists in region
+// Set bit indicates value exists in house
 static void update_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ],
     uint16_t blk[HOUSE_SZ]) {
   for (int i = 0; i < HOUSE_SZ; i++) {
@@ -110,6 +110,7 @@ static void eliminate(const uint16_t row[HOUSE_SZ], const uint16_t col[HOUSE_SZ]
   }
 }
 
+// Hidden singles strategy
 static void singles() {
   // Look for hidden singles in each row
   for (int i = 0; i < HOUSE_SZ; i++) {
@@ -211,7 +212,7 @@ static void singles() {
 }
 
 // Use naked pairs strategy to eliminate further options
-// Naked pair: two cells in same group that have only two identical possibilities
+// Naked pair: two cells in same house that have only two identical possibilities
 static void naked_pairs() {
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
@@ -276,7 +277,7 @@ static void naked_pairs() {
   }
 }
 
-// Apply hidden pairs strategy: look for pairs of cells in each group
+// Apply hidden pairs strategy: look for pairs of cells in each house
 // that are the only ones that can have 2 options
 static void hidden_pairs() {
 
