@@ -53,6 +53,45 @@ int is_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ], uint16_t blk[HOUSE
   return 1;
 }
 
+// Eliminate as candidate value of solved cell & propagate any other
+// solved cells process creates
+void remove_candidate(int i, int j) {
+  uint16_t elim = ~cells[i][j];
+  solved[i][j] = cells[i][j];
+  cells[i][j] = 0;
+
+  for (int x = 0; x < HOUSE_SZ; x++) {
+    if (cells[i][x]) {
+      cells[i][x] &= elim;
+      if (!(cells[i][x] & (cells[i][x] - 1))) {
+        remove_candidate(i, x);
+      }
+    }
+  }
+
+  for (int y = 0; y < HOUSE_SZ; y++) {
+    if (cells[y][j]) {
+      cells[y][j] &= elim;
+      if (!(cells[y][j] & (cells[y][j] - 1))) {
+        remove_candidate(y, j);
+      }
+    }
+  }
+
+  int z1, z2;
+  blk_coords(blk_index(i, j), &z1, &z2);
+  for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+    for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+      if (cells[a][b]) {
+        cells[a][b] &= elim;
+        if (!(cells[a][b] & (cells[a][b] - 1))) {
+          remove_candidate(a, b);
+        }
+      }
+    }
+  }
+}
+
 // Eliminate possibilites for each cell based on what values are already
 // in each row/column/block
 static void eliminate(const uint16_t row[HOUSE_SZ], const uint16_t col[HOUSE_SZ],
