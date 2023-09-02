@@ -439,11 +439,11 @@ static void claiming_pairs() {
         uint16_t inter = cells[i][j] & pairs;
         if (inter) {
           // Check remainder of intersection with block for other pair
-          for (int k = j + 1; k < j / BLK_WIDTH * BLK_WIDTH + BLK_WIDTH; k++) {
+          int z1, z2;
+          blk_coords(blk_index(i, j), &z1, &z2);
+          for (int k = j + 1; k < z2 + BLK_WIDTH; k++) {
             uint16_t pair = inter & cells[i][k];
             if (pair) {
-              int z1, z2;
-              blk_coords(blk_index(i, j), &z1, &z2);
               for (int a = z1; a < z1 + BLK_WIDTH; a++) {
                 for (int b = z2; b < z2 + BLK_WIDTH; b++) {
                   if (cells[a][b] && !(a == i && b == j) && !(a == i && b == k)) {
@@ -485,11 +485,11 @@ static void claiming_pairs() {
       for (int i = 0; i < HOUSE_SZ; i++) {
         uint16_t inter = cells[i][j] & pairs;
         if (inter) {
-          for (int k = i + 1; k < i / BLK_WIDTH * BLK_WIDTH + BLK_WIDTH; k++) {
+          int z1, z2;
+          blk_coords(blk_index(i, j), &z1, &z2);
+          for (int k = i + 1; k < z1 + BLK_WIDTH; k++) {
             uint16_t pair = inter & cells[k][j];
             if (pair) {
-              int z1, z2;
-              blk_coords(blk_index(i, j), &z1, &z2);
               for (int a = z1; a < z1 + BLK_WIDTH; a++) {
                 for (int b = z2; b < z2 + BLK_WIDTH; b++) {
                   if (cells[a][b] && !(a == i && b == j) && !(a == k && b == j)) {
