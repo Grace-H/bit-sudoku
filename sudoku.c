@@ -9,8 +9,8 @@
 
 #include "util.h"
 
-// 2D array of bitvectors representing candidates
-static uint16_t cells[HOUSE_SZ][HOUSE_SZ]; // only the first 9 bits of each will be used
+static uint16_t cells[HOUSE_SZ][HOUSE_SZ]; // Candidates
+static uint16_t solved[HOUSE_SZ][HOUSE_SZ]; // Solutions
 
 // Get block number (0->9 reading left-right top-bottom) from i,j coordinates
 // Block index is i rounded down to nearest multiple of cell size + j divided by cell size
@@ -30,9 +30,8 @@ static void update_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ],
     uint16_t blk[HOUSE_SZ]) {
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
-      uint16_t c = cells[i][j];
-      // if only one number is in bitvector (power of 2), mark it as found
-      if (!(c & (c - 1))) {
+      uint16_t c = solved[i][j];
+      if (c) {
         row[i] |= c;
         col[j] |= c;
         blk[blk_index(i, j)] |= c;
@@ -922,10 +921,11 @@ int main(int argc, char **argv) {
     return 1;
   }
 
-  // Initialize bitvectors of cell possibilites
+  // Initialize grids
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
       cells[i][j] = (1 << HOUSE_SZ) - 1;
+      solved[i][j] = 0;
     }
   }
 
