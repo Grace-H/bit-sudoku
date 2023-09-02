@@ -183,10 +183,10 @@ static void singles() {
 
     int z1, z2;
     blk_coords(z, &z1, &z2);
-    for (int i = z1; i < z1 + BLK_WIDTH; i++) {
-      for (int j = z2; j < z2 + BLK_WIDTH; j++) {
+    for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+      for (int b = z2; b < z2 + BLK_WIDTH; b++) {
         for (int k = 0; k < HOUSE_SZ; k++) {
-          opts_count[k] += (cells[i][j] >> k) & 1;
+          opts_count[k] += (cells[a][b] >> k) & 1;
         }
       }
     }
@@ -199,12 +199,12 @@ static void singles() {
     }
 
     // Find cells that have one of the hidden singles
-    for (int i = z1; i < z1 + BLK_WIDTH; i++) {
-      for (int j = z2; j < z2 + BLK_WIDTH; j++) {
-        if (cells[i][j] & singles) {
-          cells[i][j] &= singles;
-          singles ^= cells[i][j]; // Cross off as safeguard
-          remove_candidate(i, j);
+    for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+      for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+        if (cells[a][b] & singles) {
+          cells[a][b] &= singles;
+          singles ^= cells[a][b]; // Cross off as safeguard
+          remove_candidate(a, b);
         }
       }
     }
@@ -369,10 +369,10 @@ static void hidden_pairs() {
 
     int z1, z2;
     blk_coords(z, &z1, &z2);
-    for (int i = z1; i < z1 + BLK_WIDTH; i++) {
-      for (int j = z2; j < z2 + BLK_WIDTH; j++) {
+    for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+      for (int b = z2; b < z2 + BLK_WIDTH; b++) {
         for (int k = 0; k < HOUSE_SZ; k++) {
-          opts_count[k] += (cells[i][j] >> k) & 1;
+          opts_count[k] += (cells[a][b] >> k) & 1;
         }
       }
     }
@@ -387,15 +387,15 @@ static void hidden_pairs() {
 
     if (bit_count(pairs) >= 2) {
       // Find pairs of cells that share two of the possibilities
-      for (int i = z1; i < z1 + BLK_WIDTH; i++) {
-        for (int j = z2; j < z2 + BLK_WIDTH; j++) {
-          uint16_t inter = cells[i][j] & pairs;
+      for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+        for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+          uint16_t inter = cells[a][b] & pairs;
           if (bit_count(inter) >= 2) {
             for (int x = z1; x < z1 + BLK_WIDTH; x++) {
               for (int y = z2; y < z2 + BLK_WIDTH; y++) {
-                if (!(i == x && j == y) &&
+                if (!(a == x && b == y) &&
                     bit_count(inter & cells[x][y]) >= 2) {
-                  cells[i][j] = inter;
+                  cells[a][b] = inter;
                   cells[x][y] = inter;
                   pairs &= ~inter;
                 }
@@ -522,10 +522,10 @@ static void pointing_pairs() {
 
     int z1, z2;
     blk_coords(z, &z1, &z2);
-    for (int i = z1; i < z1 + BLK_WIDTH; i++) {
-      for (int j = z2; j < z2 + BLK_WIDTH; j++) {
+    for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+      for (int b = z2; b < z2 + BLK_WIDTH; b++) {
         for (int k = 0; k < HOUSE_SZ; k++) {
-          opts_count[k] += (cells[i][j] >> k) & 1;
+          opts_count[k] += (cells[a][b] >> k) & 1;
         }
       }
     }
@@ -540,22 +540,22 @@ static void pointing_pairs() {
 
     if (bit_count(pairs) >= 1) {
       // Find the pairs of cells with these numbers
-      for (int i = z1; i < z1 + BLK_WIDTH; i++) {
-        for (int j = z2; j < z2 + BLK_WIDTH; j++) {
+      for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+        for (int b = z2; b < z2 + BLK_WIDTH; b++) {
 
           // If cell contains a pair, check the row/column for the other
-          uint16_t inter = cells[i][j] & pairs;
+          uint16_t inter = cells[a][b] & pairs;
           if (inter) {
 
             // Column
-            for (int y = i + 1; inter && y < z1 + BLK_WIDTH; y++) {
-              uint16_t pair = inter & cells[y][j];
+            for (int y = a + 1; inter && y < z1 + BLK_WIDTH; y++) {
+              uint16_t pair = inter & cells[y][b];
               if (pair) {
                 for (int k = 0; k < HOUSE_SZ; k++) {
-                  if (cells[k][j] && k != y && k != i) {
-                    cells[k][j] &= ~pair;
-                    if (!(cells[k][j] & (cells[k][j] - 1))) {
-                      remove_candidate(k, j);
+                  if (cells[k][b] && k != y && k != a) {
+                    cells[k][b] &= ~pair;
+                    if (!(cells[k][b] & (cells[k][b] - 1))) {
+                      remove_candidate(k, b);
                     }
                   }
                 }
@@ -564,14 +564,14 @@ static void pointing_pairs() {
             }
 
             // Row
-            for (int x = j + 1; inter && x < z2 + BLK_WIDTH; x++) {
-              uint16_t pair = inter & cells[i][x];
+            for (int x = b + 1; inter && x < z2 + BLK_WIDTH; x++) {
+              uint16_t pair = inter & cells[a][x];
               if (pair) {
                 for (int k = 0; k < HOUSE_SZ; k++) {
-                  if (cells[i][k] && k != x && k != j) {
-                    cells[i][k] &= ~pair;
-                    if (!(cells[i][k] & (cells[i][k] - 1))) {
-                      remove_candidate(i, k);
+                  if (cells[a][k] && k != x && k != b) {
+                    cells[a][k] &= ~pair;
+                    if (!(cells[a][k] & (cells[a][k] - 1))) {
+                      remove_candidate(a, k);
                     }
                   }
                 }
@@ -745,10 +745,10 @@ static void x_wing() {
 
     int z1, z2;
     blk_coords(z, &z1, &z2);
-    for (int i = z1; i < z1 + BLK_WIDTH; i++) {
-      for (int j = z2; j < z2 + BLK_WIDTH; j++) {
+    for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+      for (int b = z2; b < z2 + BLK_WIDTH; b++) {
         for (int k = 0; k < HOUSE_SZ; k++) {
-          opts_count[k] += (cells[i][j] >> k) & 1;
+          opts_count[k] += (cells[a][b] >> k) & 1;
         }
       }
     }
