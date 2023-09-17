@@ -17,6 +17,7 @@
 struct transform {
   int i; // Coordinates of cell transformed
   int j;
+  uint16_t solution;   // Current, tried solution of cell
   uint16_t candidates; // Former candidates of cell
   uint16_t tried;      // Candidates that have been tried as solutions
 };
@@ -147,8 +148,7 @@ void propagate_add_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t ce
 
   for (int y = i + 1; y < HOUSE_SZ; y++) {
     if (cells[y][j] != ref[y][j]) {
-      uint16_t old_candidates = cells[y][j];
-      cells[y][j] |= solution;
+      uint16_t old_candidates = cells[y][j]; cells[y][j] |= solution;
       if (!(old_candidates & (old_candidates - 1))) {
         propagate_add_candidate(ref, cells, y, j, old_candidates);
       }
@@ -276,9 +276,10 @@ int main(int argc, char **argv) {
       struct transform *trans = malloc(sizeof(struct transform));
       trans->i = i;
       trans->j = j;
+      trans->solution = 1 << solution;
       trans->candidates = cells[i][j];
       trans->tried = 1 << solution;
-      cells[i][j] &= 1 << solution;
+      cells[i][j] = trans->solution;
       stack_push(&transforms, trans);
 
       propagate_rm_candidate(cells, i, j, n);
@@ -304,7 +305,8 @@ int main(int argc, char **argv) {
       int i = trans->i;
       int j = trans->j;
       n = i * HOUSE_SZ + j;
-      uint16_t solution = cells[i][j]; // Current, invalid solution
+      uint16_t solution = trans->solution; // Current, invalid solution
+      cells[i][j] = trans->candidates;
 
       // Reverse effect on houses
       propagate_add_candidate(ref, cells, i, j, solution);
