@@ -6,13 +6,13 @@ verbose=false
 
 while getopts "hv" OPT; do
     case $OPT in
-	h)
-	    echo "Usage: test.sh [-hv] <solver> <test-dir>"
-	    exit 1
-	    ;;
-	v)
-	    verbose=true
-	    ;;
+        h)
+            echo "Usage: test.sh [-hv] <solver> <test-dir>"
+            exit 1
+            ;;
+        v)
+            verbose=true
+            ;;
     esac
 done
 shift $((OPTIND - 1))
