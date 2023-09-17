@@ -314,8 +314,23 @@ int main(int argc, char **argv) {
       update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
     } while ((trans->candidates & (~trans->tried)) == 0);
 
-    // TODO Try alternate transformation on the same cell
+    if (trans) {
+      uint16_t remaining = trans->candidates & ~trans->tried;
 
+      // Construct transformation
+      int solution = 0;
+      while (!((remaining >> solution) & 1)) {
+        solution++;
+      }
+
+      trans->solution = 1 << solution;
+      trans->candidates = cells[trans->i][trans->j];
+      trans->tried |= trans->solution;
+      cells[trans->i][trans->j] = trans->solution;
+      stack_push(&transforms, trans);
+
+      propagate_rm_candidate(cells, trans->i, trans->j, n);
+    }
     update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
   }
 
