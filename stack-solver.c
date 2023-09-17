@@ -88,38 +88,45 @@ int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
 
 // Eliminate as candidate value of solved cell & propagate any other
 // solved cells process creates
-void propagate_rm_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
+void propagate_rm_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j, int n) {
+  int ni = n / HOUSE_SZ;
+  int nj = n % HOUSE_SZ;
+  int nz1, nz2;
+  blk_coords(blk_index(ni, nj), &nz1, &nz2);
+
   uint16_t elim = ~cells[i][j];
 
-  for (int x = 0; x < HOUSE_SZ; x++) {
+  for (int x = i == ni ? nj + 1 : 0; x < HOUSE_SZ; x++) {
     if (x != j) {
       uint16_t old_candidates = cells[i][x];
       cells[i][x] &= elim;
       if ((old_candidates & (old_candidates - 1)) && !(cells[i][x] & (cells[i][x] - 1))) {
-        propagate_rm_candidate(cells, i, x);
+        propagate_rm_candidate(cells, i, x, n);
       }
     }
   }
 
-  for (int y = 0; y < HOUSE_SZ; y++) {
+  for (int y = j == nj ? ni + 1 : 0; y < HOUSE_SZ; y++) {
     if (y != i) {
       uint16_t old_candidates = cells[y][j];
       cells[y][j] &= elim;
       if ((old_candidates & (old_candidates - 1)) && !(cells[y][j] & (cells[y][j] - 1))) {
-        propagate_rm_candidate(cells, y, j);
+        propagate_rm_candidate(cells, y, j, n);
       }
     }
   }
 
   int z1, z2;
   blk_coords(blk_index(i, j), &z1, &z2);
-  for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+  int same_block = nz1 == z1 && nz2 == z2;
+  for (int a = same_block ? ni : z1; a < z1 + BLK_WIDTH; a++) {
     for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-      if (!(a == i && b == j)) {
+      if ((same_block && (a > ni || (a == ni && b > nj))) || 
+          (!same_block && !(a == i && b == j))) {
         uint16_t old_candidates = cells[a][b];
         cells[a][b] &= elim;
         if ((old_candidates & (old_candidates - 1)) && !(cells[a][b] & (cells[a][b] - 1))) {
-          propagate_rm_candidate(cells, a, b);
+          propagate_rm_candidate(cells, a, b, n);
         }
       }
     }
@@ -274,7 +281,7 @@ int main(int argc, char **argv) {
       cells[i][j] &= 1 << solution;
       stack_push(&transforms, trans);
 
-      propagate_rm_candidate(cells, i, j);
+      propagate_rm_candidate(cells, i, j, n);
 
       update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
     }
