@@ -571,6 +571,23 @@ static void claiming_pairs() {
                     cells[a][b] &= ~pair;
                     if (!(cells[a][b] & (cells[a][b] - 1))) {
                       remove_candidate(a, b);
+
+                      for (int x = 0; x < HOUSE_SZ; x++) {
+                        opts_count[x] = 0;
+                      }
+
+                      for (int i2 = 0; i2 < HOUSE_SZ; i2++) {
+                        for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
+                          opts_count[k2] += (cells[i2][j] >> k2) & 1;
+                        }
+                      }
+
+                      uint16_t pairs = 0;
+                      for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
+                        if (opts_count[k2] == 2) {
+                          pairs |= 1 << k2;
+                        }
+                      }
                     }
                   }
                 }
