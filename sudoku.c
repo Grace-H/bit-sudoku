@@ -136,8 +136,27 @@ static void singles() {
     for (int j = 0; j < HOUSE_SZ; j++) {
       if (cells[i][j] & singles) {
         cells[i][j] &= singles;
-        singles ^= cells[i][j]; // Cross off as safeguard
         remove_candidate(i, j);
+
+        // Recalculate opts_count & singles
+        // as they may have changed in propagation
+        for (int x = 0; x < HOUSE_SZ; x++) {
+          opts_count[x] = 0;
+        }
+
+        for (int l = 0; l < HOUSE_SZ; l++) {
+          for (int k = 0; k < HOUSE_SZ; k++) {
+            opts_count[k] += (cells[i][l] >> k) & 1;
+          }
+        }
+
+        uint16_t singles = 0;
+        for (int k = 0; k < HOUSE_SZ; k++) {
+          if (opts_count[k] == 1) {
+            singles |= 1 << k;
+          }
+        }
+        j = 0;  // Go back to beginning
       }
     }
   }
@@ -168,8 +187,26 @@ static void singles() {
     for (int i = 0; i < HOUSE_SZ; i++) {
       if (cells[i][j] & singles) {
         cells[i][j] &= singles;
-        singles ^= cells[i][j]; // Cross off as safeguard
         remove_candidate(i, j);
+
+        for (int x = 0; x < HOUSE_SZ; x++) {
+          opts_count[x] = 0;
+        }
+
+        for (int l = 0; l < HOUSE_SZ; l++) {
+          for (int k = 0; k < HOUSE_SZ; k++) {
+            opts_count[k] += (cells[l][j] >> k) & 1;
+          }
+        }
+
+        // Create bitvector of numbers with only one possibility
+        uint16_t singles = 0;
+        for (int k = 0; k < HOUSE_SZ; k++) {
+          if (opts_count[k] == 1) {
+            singles |= 1 << k;
+          }
+        }
+        i = 0;
       }
     }
   }
@@ -203,8 +240,28 @@ static void singles() {
       for (int b = z2; b < z2 + BLK_WIDTH; b++) {
         if (cells[a][b] & singles) {
           cells[a][b] &= singles;
-          singles ^= cells[a][b]; // Cross off as safeguard
           remove_candidate(a, b);
+
+          for (int x = 0; x < HOUSE_SZ; x++) {
+            opts_count[x] = 0;
+          }
+
+          for (int a2 = z1; a2 < z1 + BLK_WIDTH; a2++) {
+            for (int b2 = z2; b2 < z2 + BLK_WIDTH; b2++) {
+              for (int k = 0; k < HOUSE_SZ; k++) {
+                opts_count[k] += (cells[a2][b2] >> k) & 1;
+              }
+            }
+          }
+
+          uint16_t singles = 0;
+          for (int k = 0; k < HOUSE_SZ; k++) {
+            if (opts_count[k] == 1) {
+              singles |= 1 << k;
+            }
+          }
+          a = z1;
+          b = z2;
         }
       }
     }
