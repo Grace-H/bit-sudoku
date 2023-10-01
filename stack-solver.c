@@ -215,12 +215,12 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
       uint16_t old_candidates = cells[i][x];
       cells[i][x] &= elim;
       if (!cells[i][x]) {
-        propagate_add_candidate(ref, cells, i, j, cells[i][j]);
+        recalc_all(cells, ref, i, j);
         return 1;
       }
       if ((old_candidates & (old_candidates - 1)) && !(cells[i][x] & (cells[i][x] - 1))) {
         if (attempt_rm_candidate(ref, cells, i, x, n)) {
-          propagate_add_candidate(ref, cells, i, j, cells[i][j]);
+          recalc_all(cells, ref, i, j);
           return 1;
         }
       }
@@ -232,12 +232,12 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
       uint16_t old_candidates = cells[y][j];
       cells[y][j] &= elim;
       if (!cells[y][j]) {
-        propagate_add_candidate(ref, cells, i, j, cells[i][j]);
+        recalc_all(cells, ref, i, j);
         return 1;
       }
       if ((old_candidates & (old_candidates - 1)) && !(cells[y][j] & (cells[y][j] - 1))) {
         if (attempt_rm_candidate(ref, cells, y, j, n)) {
-          propagate_add_candidate(ref, cells, i, j, cells[i][j]);
+          recalc_all(cells, ref, i, j);
           return 1;
         }
       }
@@ -254,12 +254,12 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
         uint16_t old_candidates = cells[a][b];
         cells[a][b] &= elim;
         if (!cells[a][b]) {
-          propagate_add_candidate(ref, cells, i, j, cells[i][j]);
+          recalc_all(cells, ref, i, j);
           return 1;
         }
         if ((old_candidates & (old_candidates - 1)) && !(cells[a][b] & (cells[a][b] - 1))) {
           if (attempt_rm_candidate(ref, cells, a, b, n)) {
-            propagate_add_candidate(ref, cells, i, j, cells[i][j]);
+            recalc_all(cells, ref, i, j);
             return 1;
           }
         }
@@ -267,7 +267,7 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
     }
   }
   if (!is_valid(cells)) {
-    propagate_add_candidate(ref, cells, i, j, cells[i][j]);
+    recalc_all(cells, ref, i, j);
     return 1;
   }
   return 0;
@@ -410,7 +410,7 @@ int main(int argc, char **argv) {
       cells[i][j] = trans->candidates;
 
       // Reverse effect on houses
-      propagate_add_candidate(ref, cells, i, j, solution);
+      recalc_all(cells, ref, i, j); 
 
       update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
     } while ((trans->candidates & (~trans->tried)) == 0);
