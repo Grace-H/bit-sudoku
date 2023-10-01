@@ -156,37 +156,43 @@ void recalc_all(uint16_t cells[HOUSE_SZ][HOUSE_SZ], const uint16_t ref[HOUSE_SZ]
 }
 
 void propagate_add_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j, int n, uint16_t solution) {
+  int ni = n / HOUSE_SZ;
+  int nj = n % HOUSE_SZ;
+  int nz1, nz2;
+  blk_coords(blk_index(ni, nj), &nz1, &nz2);
 
   // Add as candidate in cells > n that weren't solved in original
-  for (int x = j + 1; x < HOUSE_SZ; x++) {
+  for (int x = i == ni ? nj + 1 : 0; x < HOUSE_SZ; x++) {
     if (cells[i][x] != ref[i][x]) {
       uint16_t old_candidates = cells[i][x];
       cells[i][x] |= solution;
-      if (!(old_candidates & (old_candidates - 1))) {
-        propagate_add_candidate(ref, cells, i, x, old_candidates);
+      if (!(old_candidates & (old_candidates - 1)) && (cells[i][x] & (cells[i][x] - 1))) {
+        propagate_add_candidate(ref, cells, i, x, n, old_candidates);
       }
     }
   }
 
-  for (int y = i + 1; y < HOUSE_SZ; y++) {
+  for (int y = j == nj ? ni + 1 : 0; y < HOUSE_SZ; y++) {
     if (cells[y][j] != ref[y][j]) {
       uint16_t old_candidates = cells[y][j]; cells[y][j] |= solution;
-      if (!(old_candidates & (old_candidates - 1))) {
-        propagate_add_candidate(ref, cells, y, j, old_candidates);
+      if (!(old_candidates & (old_candidates - 1)) && (cells[y][j] & (cells[y][j] - 1))) {
+        propagate_add_candidate(ref, cells, y, j, n, old_candidates);
       }
     }
   }
 
   int z1, z2;
   blk_coords(blk_index(i, j), &z1, &z2);
-  for (int a = i; a < z1 + BLK_WIDTH; a++) {
+  int same_block = nz1 == z1 && nz2 == z2;
+  for (int a = same_block ? ni : z1; a < z1 + BLK_WIDTH; a++) {
     for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-      if ((a == i && b > j) || a > i) {
+      if ((same_block && (a > ni || (a == ni && b > nj))) || 
+          (!same_block && !(a == i && b == j))) {
         if (cells[a][b] != ref[a][b]) {
           uint16_t old_candidates = cells[a][b];
           cells[a][b] |= solution;
-          if (!(old_candidates & (old_candidates - 1))) {
-            propagate_add_candidate(ref, cells, a, b, old_candidates);
+          if (!(old_candidates & (old_candidates - 1)) && (cells[a][b] & (cells[a][b] - 1))) {
+            propagate_add_candidate(ref, cells, a, b, n, old_candidates);
           }
         }
       }
