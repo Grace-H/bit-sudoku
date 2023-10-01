@@ -778,11 +778,57 @@ static void x_wing() {
               cells[k][col1] &= ~(1 << n);
               if (cells[k][col1] && !(cells[k][col1] & (cells[k][col1] - 1))) {
                 remove_candidate(k, col1);
+
+                for (int x = 0; x < HOUSE_SZ; x++) {
+                  row_pairs[x] = 0;
+                }
+
+                for (int i2 = 0; i2 < HOUSE_SZ; i2++) {
+                  int opts_count[HOUSE_SZ];
+                  for (int x2 = 0; x2 < HOUSE_SZ; x2++) {
+                    opts_count[x2] = 0;
+                  }
+
+                  for (int j2 = 0; j2 < HOUSE_SZ; j2++) {
+                    for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
+                      opts_count[k2] += (cells[i2][j2] >> k2) & 1;
+                    }
+                  }
+
+                  for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
+                    if (opts_count[k2] == 2) {
+                      row_pairs[i2] |= 1 << k2;
+                    }
+                  }
+                }
               }
 
               cells[k][col2] &= ~(1 << n);
               if (cells[k][col2] && !(cells[k][col2] & (cells[k][col2] - 1))) {
                 remove_candidate(k, col2);
+
+                for (int x = 0; x < HOUSE_SZ; x++) {
+                  row_pairs[x] = 0;
+                }
+
+                for (int i2 = 0; i2 < HOUSE_SZ; i2++) {
+                  int opts_count[HOUSE_SZ];
+                  for (int x = 0; x < HOUSE_SZ; x++) {
+                    opts_count[x] = 0;
+                  }
+
+                  for (int j2 = 0; j2 < HOUSE_SZ; j2++) {
+                    for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
+                      opts_count[k2] += (cells[i2][j2] >> k2) & 1;
+                    }
+                  }
+
+                  for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
+                    if (opts_count[k2] == 2) {
+                      row_pairs[i2] |= 1 << k2;
+                    }
+                  }
+                }
               }
             }
           }
@@ -848,11 +894,57 @@ static void x_wing() {
               cells[row1][k] &= ~(1 << n);
               if (cells[row1][k] && !(cells[row1][k] & (cells[row1][k] - 1))) {
                 remove_candidate(row1, k);
+
+                for (int x = 0; x < HOUSE_SZ; x++) {
+                  col_pairs[x] = 0;
+                }
+
+                for (int j2 = 0; j2 < HOUSE_SZ; j2++) {
+                  int opts_count[HOUSE_SZ];
+                  for (int x = 0; x < HOUSE_SZ; x++) {
+                    opts_count[x] = 0;
+                  }
+
+                  for (int i2 = 0; i2 < HOUSE_SZ; i2++) {
+                    for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
+                      opts_count[k2] += (cells[i2][j2] >> k2) & 1;
+                    }
+                  }
+
+                  for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
+                    if (opts_count[k2] == 2) {
+                      col_pairs[j2] |= 1 << k2;
+                    }
+                  }
+                }
               }
 
               cells[row2][k] &= ~(1 << n);
               if (cells[row2][k] && !(cells[row2][k] & (cells[row2][k] - 1))) {
                 remove_candidate(row2, k);
+
+                for (int x = 0; x < HOUSE_SZ; x++) {
+                  col_pairs[x] = 0;
+                }
+
+                for (int j2 = 0; j2 < HOUSE_SZ; j2++) {
+                  int opts_count[HOUSE_SZ];
+                  for (int x = 0; x < HOUSE_SZ; x++) {
+                    opts_count[x] = 0;
+                  }
+
+                  for (int i2 = 0; i2 < HOUSE_SZ; i2++) {
+                    for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
+                      opts_count[k2] += (cells[i2][j2] >> k2) & 1;
+                    }
+                  }
+
+                  for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
+                    if (opts_count[k2] == 2) {
+                      col_pairs[j] |= 1 << k2;
+                    }
+                  }
+                }
               }
             }
           }
@@ -942,11 +1034,61 @@ static void x_wing() {
             cells[row1][b] &= ~(1 << n);
             if (cells[row1][b] && !(cells[row1][b] & (cells[row1][b] - 1))) {
               remove_candidate(row1, b);
+
+              for (int x = 0; x < HOUSE_SZ; x++) {
+                blk_pairs[x] = 0;
+              }
+
+              for (int z = 0; z < HOUSE_SZ; z++) {
+                int opts_count[HOUSE_SZ];
+                for (int x = 0; x < HOUSE_SZ; x++) {
+                  opts_count[x] = 0;
+                }
+
+                for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+                  for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+                    for (int k = 0; k < HOUSE_SZ; k++) {
+                      opts_count[k] += (cells[a][b] >> k) & 1;
+                    }
+                  }
+                }
+
+                for (int k = 0; k < HOUSE_SZ; k++) {
+                  if (opts_count[k] == 2) {
+                    blk_pairs[z] |= 1 << k;
+                  }
+                }
+              }
             }
 
             cells[row2][b] &= ~(1 << n);
             if (cells[row2][b] && !(cells[row2][b] & (cells[row2][b] - 1))) {
               remove_candidate(row2, b);
+
+              for (int x = 0; x < HOUSE_SZ; x++) {
+                blk_pairs[x] = 0;
+              }
+
+              for (int z = 0; z < HOUSE_SZ; z++) {
+                int opts_count[HOUSE_SZ];
+                for (int x = 0; x < HOUSE_SZ; x++) {
+                  opts_count[x] = 0;
+                }
+
+                for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+                  for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+                    for (int k = 0; k < HOUSE_SZ; k++) {
+                      opts_count[k] += (cells[a][b] >> k) & 1;
+                    }
+                  }
+                }
+
+                for (int k = 0; k < HOUSE_SZ; k++) {
+                  if (opts_count[k] == 2) {
+                    blk_pairs[z] |= 1 << k;
+                  }
+                }
+              }
             }
           }
         }
@@ -1000,11 +1142,61 @@ static void x_wing() {
             cells[a][col1] &= ~(1 << n);
             if (cells[a][col1] && !(cells[a][col1] & (cells[a][col1] - 1))) {
               remove_candidate(a, col1);
+
+              for (int x = 0; x < HOUSE_SZ; x++) {
+                blk_pairs[x] = 0;
+              }
+
+              for (int z = 0; z < HOUSE_SZ; z++) {
+                int opts_count[HOUSE_SZ];
+                for (int x = 0; x < HOUSE_SZ; x++) {
+                  opts_count[x] = 0;
+                }
+
+                for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+                  for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+                    for (int k = 0; k < HOUSE_SZ; k++) {
+                      opts_count[k] += (cells[a][b] >> k) & 1;
+                    }
+                  }
+                }
+
+                for (int k = 0; k < HOUSE_SZ; k++) {
+                  if (opts_count[k] == 2) {
+                    blk_pairs[z] |= 1 << k;
+                  }
+                }
+              }
             }
 
             cells[a][col2] &= ~(1 << n);
             if (cells[a][col2] && !(cells[a][col2] & (cells[a][col2] - 1))) {
               remove_candidate(a, col2);
+
+              for (int x = 0; x < HOUSE_SZ; x++) {
+                blk_pairs[x] = 0;
+              }
+
+              for (int z = 0; z < HOUSE_SZ; z++) {
+                int opts_count[HOUSE_SZ];
+                for (int x = 0; x < HOUSE_SZ; x++) {
+                  opts_count[x] = 0;
+                }
+
+                for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+                  for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+                    for (int k = 0; k < HOUSE_SZ; k++) {
+                      opts_count[k] += (cells[a][b] >> k) & 1;
+                    }
+                  }
+                }
+
+                for (int k = 0; k < HOUSE_SZ; k++) {
+                  if (opts_count[k] == 2) {
+                    blk_pairs[z] |= 1 << k;
+                  }
+                }
+              }
             }
           }
         }
