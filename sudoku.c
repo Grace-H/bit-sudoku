@@ -505,8 +505,26 @@ static void claiming_pairs() {
                 for (int b = z2; b < z2 + BLK_WIDTH; b++) {
                   if (cells[a][b] && !(a == i && b == j) && !(a == i && b == k)) {
                     cells[a][b] &= ~pair;
+
                     if (!(cells[a][b] & (cells[a][b] - 1))) {
                       remove_candidate(a, b);
+                      for (int x = 0; x < HOUSE_SZ; x++) {
+                        opts_count[x] = 0;
+                      }
+
+                      for (int j2 = 0; j2 < HOUSE_SZ; j2++) {
+                        for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
+                          opts_count[k2] += (cells[i][j2] >> k2) & 1;
+                        }
+                      }
+
+                      // Make a bitvector of numbers that can only go in two cells
+                      uint16_t pairs = 0;
+                      for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
+                        if (opts_count[k] == 2) {
+                          pairs |= 1 << k2;
+                        }
+                      }
                     }
                   }
                 }
