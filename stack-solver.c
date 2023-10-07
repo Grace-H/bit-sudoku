@@ -400,7 +400,9 @@ int main(int argc, char **argv) {
       cells[i][j] = trans->solution;
       stack_push(&transforms, trans);
 
-      attempt_rm_candidate(ref, cells, i, j, n);
+      if (attempt_rm_candidate(ref, cells, i, j, n)) {
+        break;
+      }
 
       update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
     }
