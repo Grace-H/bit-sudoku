@@ -120,23 +120,34 @@ void calc_candidates(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   }
 }
 
-void recalc_all(uint16_t cells[HOUSE_SZ][HOUSE_SZ], const uint16_t ref[HOUSE_SZ][HOUSE_SZ], int i, int j) {
-  for (int x = 0; x < HOUSE_SZ; x++) {
-    if (ref[i][x] & (ref[i][x] - 1)) {
-      uint16_t old_candidates = cells[i][x];
-      calc_candidates(cells, i, x);
-      if (!(old_candidates & (old_candidates - 1)) && (cells[i][x] & (cells[i][x] - 1))) {
-        recalc_all(cells, ref, i, x);
+void recalc_all(uint16_t cells[HOUSE_SZ][HOUSE_SZ], const uint16_t ref[HOUSE_SZ][HOUSE_SZ], int i, int j, int n) {
+  calc_candidates(cells, i, j);
+
+  int ni = n / HOUSE_SZ;
+  int nj = n % HOUSE_SZ;
+  int nz1, nz2;
+  blk_coords(blk_index(ni, nj), &nz1, &nz2);
+
+  for (int x = i == ni ? nj : 0; x < HOUSE_SZ; x++) {
+    if (x != j) {
+      if (ref[i][x] & (ref[i][x] - 1)) {
+        uint16_t old_candidates = cells[i][x];
+        calc_candidates(cells, i, x);
+        if (!(old_candidates & (old_candidates - 1)) && (cells[i][x] & (cells[i][x] - 1))) {
+          recalc_all(cells, ref, i, x, n);
+        }
       }
     }
   }
 
-  for (int y = 0; y < HOUSE_SZ; y++) {
-    if (ref[y][j] & (ref[y][j] - 1)) {
-      uint16_t old_candidates = cells[y][j];
-      calc_candidates(cells, y, j);
-      if (!(old_candidates & (old_candidates - 1)) && (cells[y][j] & (cells[y][j] - 1))) {
-        recalc_all(cells, ref, y, j);
+  for (int y = j == nj ? ni : 0; y < HOUSE_SZ; y++) {
+    if (y != i) {
+      if (ref[y][j] & (ref[y][j] - 1)) {
+        uint16_t old_candidates = cells[y][j];
+        calc_candidates(cells, y, j);
+        if (!(old_candidates & (old_candidates - 1)) && (cells[y][j] & (cells[y][j] - 1))) {
+          recalc_all(cells, ref, y, j, n);
+        }
       }
     }
   }
@@ -144,13 +155,17 @@ void recalc_all(uint16_t cells[HOUSE_SZ][HOUSE_SZ], const uint16_t ref[HOUSE_SZ]
 
   int z1, z2;
   blk_coords(blk_index(i, j), &z1, &z2);
-  for (int a = z1; a < BLK_WIDTH; a++) {
-    for (int b = z2; b < BLK_WIDTH; b++) {
-      if (ref[a][b] & (ref[a][b] - 1)) {
-        uint16_t old_candidates = cells[a][b];
-        calc_candidates(cells, a, b);
-        if (!(old_candidates & (old_candidates - 1)) && (cells[a][b] & (cells[a][b] - 1))) {
-          recalc_all(cells, ref, a, b);
+  int same_block = nz1 == z1 && nz2 == z2;
+  for (int a = same_block ? ni : z1; a < z1 + BLK_WIDTH; a++) {
+    for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+      if ((same_block && (a > ni || (a == ni && b > nj))) || 
+          (!same_block && !(a == i && b == j))) {
+        if (ref[a][b] & (ref[a][b] - 1)) {
+          uint16_t old_candidates = cells[a][b];
+          calc_candidates(cells, a, b);
+          if (!(old_candidates & (old_candidates - 1)) && (cells[a][b] & (cells[a][b] - 1))) {
+            recalc_all(cells, ref, a, b, n);
+          }
         }
       }
     }
@@ -217,12 +232,12 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
       uint16_t old_candidates = cells[i][x];
       cells[i][x] &= elim;
       if (!cells[i][x]) {
-        recalc_all(cells, ref, i, j);
+        recalc_all(cells, ref, i, j, n);
         return 1;
       }
       if ((old_candidates & (old_candidates - 1)) && !(cells[i][x] & (cells[i][x] - 1))) {
         if (attempt_rm_candidate(ref, cells, i, x, n)) {
-          recalc_all(cells, ref, i, j);
+          recalc_all(cells, ref, i, j, n);
           return 1;
         }
       }
@@ -234,12 +249,12 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
       uint16_t old_candidates = cells[y][j];
       cells[y][j] &= elim;
       if (!cells[y][j]) {
-        recalc_all(cells, ref, i, j);
+        recalc_all(cells, ref, i, j, n);
         return 1;
       }
       if ((old_candidates & (old_candidates - 1)) && !(cells[y][j] & (cells[y][j] - 1))) {
         if (attempt_rm_candidate(ref, cells, y, j, n)) {
-          recalc_all(cells, ref, i, j);
+          recalc_all(cells, ref, i, j, n);
           return 1;
         }
       }
@@ -256,12 +271,12 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
         uint16_t old_candidates = cells[a][b];
         cells[a][b] &= elim;
         if (!cells[a][b]) {
-          recalc_all(cells, ref, i, j);
+          recalc_all(cells, ref, i, j, n);
           return 1;
         }
         if ((old_candidates & (old_candidates - 1)) && !(cells[a][b] & (cells[a][b] - 1))) {
           if (attempt_rm_candidate(ref, cells, a, b, n)) {
-            recalc_all(cells, ref, i, j);
+            recalc_all(cells, ref, i, j, n);
             return 1;
           }
         }
@@ -269,7 +284,7 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
     }
   }
   if (!is_valid(cells)) {
-    recalc_all(cells, ref, i, j);
+    recalc_all(cells, ref, i, j, n);
     return 1;
   }
   return 0;
@@ -412,7 +427,7 @@ int main(int argc, char **argv) {
       cells[i][j] = trans->candidates;
 
       // Reverse effect on houses
-      recalc_all(cells, ref, i, j); 
+      recalc_all(cells, ref, i, j, n);
 
       update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
     } while ((trans->candidates & (~trans->tried)) == 0);
