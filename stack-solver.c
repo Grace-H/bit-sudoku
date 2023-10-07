@@ -90,11 +90,11 @@ int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
 // Calculate new candidates for a cell
 void calc_candidates(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   cells[i][j] = (1 << HOUSE_SZ) - 1;
-  // recalculate cells in column
+
   for (int x = 0; x < HOUSE_SZ; x++) {
     if (x != j) {
       if (!(cells[i][x] & (cells[i][x] - 1))) {
-        cells[i][j] ^= cells[i][x];
+        cells[i][j] &= ~cells[i][x];
       }
     }
   }
@@ -102,7 +102,7 @@ void calc_candidates(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   for (int y = 0; y < HOUSE_SZ; y++) {
     if (y != i) {
       if (!(cells[y][j] & (cells[y][j] - 1))) {
-        cells[i][j] ^= cells[y][j];
+        cells[i][j] &= ~cells[y][j];
       }
     }
   }
@@ -112,7 +112,9 @@ void calc_candidates(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   for (int a = z1; a < BLK_WIDTH; a++) {
     for (int b = z2; b < BLK_WIDTH; b++) {
       if (!(a == i && b == j)) {
-        cells[i][j] ^= cells[a][b];
+        if (!(cells[a][b] & (cells[a][b] - 1))) {
+          cells[i][j] &= ~cells[a][b];
+        }
       }
     }
   }
