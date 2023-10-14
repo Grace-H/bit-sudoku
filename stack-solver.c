@@ -221,6 +221,44 @@ void propagate_add_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t ce
 
 // Eliminate as candidate value of solved cell & propagate any other
 // solved cells process creates
+void init_rm_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
+  printf("init_rm: %d, %d\n", i, j);
+  uint16_t elim = ~cells[i][j];
+
+  for (int x = 0; x < HOUSE_SZ; x++) {
+    if (cells[i][x] & (cells[i][x] - 1)) {
+      cells[i][x] &= elim;
+      if (!(cells[i][x] & (cells[i][x] - 1))) {
+        init_rm_candidate(cells, i, x);
+      }
+    }
+  }
+
+  for (int y = 0; y < HOUSE_SZ; y++) {
+    if (cells[y][j] & (cells[y][j] - 1)) {
+      cells[y][j] &= elim;
+      if (!(cells[y][j] & (cells[y][j] - 1))) {
+        init_rm_candidate(cells, y, j);
+      }
+    }
+  }
+
+  int z1, z2;
+  blk_coords(blk_index(i, j), &z1, &z2);
+  for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+    for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+      if (cells[a][b] & (cells[a][b] - 1)) {
+        cells[a][b] &= elim;
+        if (!(cells[a][b] & (cells[a][b] - 1))) {
+          init_rm_candidate(cells, a, b);
+        }
+      }
+    }
+  }
+}
+
+// Eliminate as candidate value of solved cell & propagate any other
+// solved cells process creates
 int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j, int n) {
   int ni = n / HOUSE_SZ;
   int nj = n % HOUSE_SZ;
@@ -328,6 +366,7 @@ int main(int argc, char **argv) {
         char d = buf[j];
         if (d >= '1' && d <= '9') {
           cells[i][j] = 1 << (d - '1');
+          init_rm_candidate(cells, i, j);
         } else {
           fprintf(stderr, "Invalid digit: %d\n", d);
           return 1;
@@ -346,17 +385,6 @@ int main(int argc, char **argv) {
   memset(&blkfin, 0, HOUSE_SZ * sizeof(uint16_t));
 
   update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
-
-  for (int i = 0; i < HOUSE_SZ; i++) {
-    for (int j = 0; j < HOUSE_SZ; j++) {
-      // if this cell is not solved, cross off possibilities
-      if(cells[i][j] & (cells[i][j] - 1)) {
-        cells[i][j] &= ~rowfin[i];
-        cells[i][j] &= ~colfin[j];
-        cells[i][j] &= ~blkfin[blk_index(i, j)];
-      }
-    }
-  }
 
   // Initialize copy for reference of original puzzle
   uint16_t ref[HOUSE_SZ][HOUSE_SZ];
