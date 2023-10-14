@@ -121,14 +121,16 @@ void calc_candidates(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
 }
 
 void recalc_all(uint16_t cells[HOUSE_SZ][HOUSE_SZ], const uint16_t ref[HOUSE_SZ][HOUSE_SZ], int i, int j, int n) {
-  calc_candidates(cells, i, j);
-
   int ni = n / HOUSE_SZ;
   int nj = n % HOUSE_SZ;
   int nz1, nz2;
   blk_coords(blk_index(ni, nj), &nz1, &nz2);
 
-  for (int x = i == ni ? nj : 0; x < HOUSE_SZ; x++) {
+  if (!(ni == i && nj == j)) {
+    calc_candidates(cells, i, j);
+  }
+
+  for (int x = i == ni ? nj + 1: 0; x < HOUSE_SZ; x++) {
     if (x != j) {
       if (ref[i][x] & (ref[i][x] - 1)) {
         uint16_t old_candidates = cells[i][x];
@@ -140,7 +142,7 @@ void recalc_all(uint16_t cells[HOUSE_SZ][HOUSE_SZ], const uint16_t ref[HOUSE_SZ]
     }
   }
 
-  for (int y = j == nj ? ni : 0; y < HOUSE_SZ; y++) {
+  for (int y = j == nj ? ni + 1: 0; y < HOUSE_SZ; y++) {
     if (y != i) {
       if (ref[y][j] & (ref[y][j] - 1)) {
         uint16_t old_candidates = cells[y][j];
