@@ -20,6 +20,7 @@ struct transform {
   uint16_t solution;   // Current, tried solution of cell
   uint16_t candidates; // Former candidates of cell
   uint16_t tried;      // Candidates that have been tried as solutions
+  uint16_t **cells;    // Copy of cells before this trans applied
 };
 
 // Get block number (0->9 reading left-right top-bottom) from i,j coordinates
@@ -87,138 +88,6 @@ int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
   return 1;
 }
 
-// Calculate new candidates for a cell
-void calc_candidates(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
-  cells[i][j] = (1 << HOUSE_SZ) - 1;
-
-  for (int x = 0; x < HOUSE_SZ; x++) {
-    if (x != j) {
-      if (!(cells[i][x] & (cells[i][x] - 1))) {
-        cells[i][j] &= ~cells[i][x];
-      }
-    }
-  }
-
-  for (int y = 0; y < HOUSE_SZ; y++) {
-    if (y != i) {
-      if (!(cells[y][j] & (cells[y][j] - 1))) {
-        cells[i][j] &= ~cells[y][j];
-      }
-    }
-  }
-
-  int z1, z2;
-  blk_coords(blk_index(i, j), &z1, &z2);
-  for (int a = z1; a < z1 + BLK_WIDTH; a++) {
-    for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-      if (!(a == i && b == j)) {
-        if (!(cells[a][b] & (cells[a][b] - 1))) {
-          cells[i][j] &= ~cells[a][b];
-        }
-      }
-    }
-  }
-}
-
-void recalc_all(uint16_t cells[HOUSE_SZ][HOUSE_SZ], const uint16_t ref[HOUSE_SZ][HOUSE_SZ], int i, int j, int n) {
-  int ni = n / HOUSE_SZ;
-  int nj = n % HOUSE_SZ;
-  int nz1, nz2;
-  blk_coords(blk_index(ni, nj), &nz1, &nz2);
-
-  if (!(ni == i && nj == j)) {
-    calc_candidates(cells, i, j);
-  }
-
-  for (int x = i == ni ? nj + 1: 0; x < HOUSE_SZ; x++) {
-    if (x != j) {
-      if (ref[i][x] & (ref[i][x] - 1)) {
-        uint16_t old_candidates = cells[i][x];
-        calc_candidates(cells, i, x);
-        if (!(old_candidates & (old_candidates - 1)) && (cells[i][x] & (cells[i][x] - 1))) {
-          recalc_all(cells, ref, i, x, n);
-        }
-      }
-    }
-  }
-
-  for (int y = j == nj ? ni + 1: 0; y < HOUSE_SZ; y++) {
-    if (y != i) {
-      if (ref[y][j] & (ref[y][j] - 1)) {
-        uint16_t old_candidates = cells[y][j];
-        calc_candidates(cells, y, j);
-        if (!(old_candidates & (old_candidates - 1)) && (cells[y][j] & (cells[y][j] - 1))) {
-          recalc_all(cells, ref, y, j, n);
-        }
-      }
-    }
-  }
-
-
-  int z1, z2;
-  blk_coords(blk_index(i, j), &z1, &z2);
-  int same_block = nz1 == z1 && nz2 == z2;
-  for (int a = same_block ? ni : z1; a < z1 + BLK_WIDTH; a++) {
-    for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-      if ((same_block && (a > ni || (a == ni && b > nj))) || 
-          (!same_block && !(a == i && b == j))) {
-        if (ref[a][b] & (ref[a][b] - 1)) {
-          uint16_t old_candidates = cells[a][b];
-          calc_candidates(cells, a, b);
-          if (!(old_candidates & (old_candidates - 1)) && (cells[a][b] & (cells[a][b] - 1))) {
-            recalc_all(cells, ref, a, b, n);
-          }
-        }
-      }
-    }
-  }
-}
-
-void propagate_add_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j, int n, uint16_t solution) {
-  int ni = n / HOUSE_SZ;
-  int nj = n % HOUSE_SZ;
-  int nz1, nz2;
-  blk_coords(blk_index(ni, nj), &nz1, &nz2);
-
-  // Add as candidate in cells > n that weren't solved in original
-  for (int x = i == ni ? nj + 1 : 0; x < HOUSE_SZ; x++) {
-    if (cells[i][x] != ref[i][x]) {
-      uint16_t old_candidates = cells[i][x];
-      cells[i][x] |= solution;
-      if (!(old_candidates & (old_candidates - 1)) && (cells[i][x] & (cells[i][x] - 1))) {
-        propagate_add_candidate(ref, cells, i, x, n, old_candidates);
-      }
-    }
-  }
-
-  for (int y = j == nj ? ni + 1 : 0; y < HOUSE_SZ; y++) {
-    if (cells[y][j] != ref[y][j]) {
-      uint16_t old_candidates = cells[y][j]; cells[y][j] |= solution;
-      if (!(old_candidates & (old_candidates - 1)) && (cells[y][j] & (cells[y][j] - 1))) {
-        propagate_add_candidate(ref, cells, y, j, n, old_candidates);
-      }
-    }
-  }
-
-  int z1, z2;
-  blk_coords(blk_index(i, j), &z1, &z2);
-  int same_block = nz1 == z1 && nz2 == z2;
-  for (int a = same_block ? ni : z1; a < z1 + BLK_WIDTH; a++) {
-    for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-      if ((same_block && (a > ni || (a == ni && b > nj))) || 
-          (!same_block && !(a == i && b == j))) {
-        if (cells[a][b] != ref[a][b]) {
-          uint16_t old_candidates = cells[a][b];
-          cells[a][b] |= solution;
-          if (!(old_candidates & (old_candidates - 1)) && (cells[a][b] & (cells[a][b] - 1))) {
-            propagate_add_candidate(ref, cells, a, b, n, old_candidates);
-          }
-        }
-      }
-    }
-  }
-}
-
 // Eliminate as candidate value of solved cell & propagate any other
 // solved cells process creates
 void init_rm_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
@@ -259,6 +128,7 @@ void init_rm_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
 
 // Eliminate as candidate value of solved cell & propagate any other
 // solved cells process creates
+// Difference from init_rm: Won't touch before n, fails fast if error
 int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j, int n) {
   int ni = n / HOUSE_SZ;
   int nj = n % HOUSE_SZ;
@@ -272,12 +142,10 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
       uint16_t old_candidates = cells[i][x];
       cells[i][x] &= elim;
       if (!cells[i][x]) {
-        recalc_all(cells, ref, i, j, n);
         return 1;
       }
       if ((old_candidates & (old_candidates - 1)) && !(cells[i][x] & (cells[i][x] - 1))) {
         if (attempt_rm_candidate(ref, cells, i, x, n)) {
-          recalc_all(cells, ref, i, j, n);
           return 1;
         }
       }
@@ -289,12 +157,10 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
       uint16_t old_candidates = cells[y][j];
       cells[y][j] &= elim;
       if (!cells[y][j]) {
-        recalc_all(cells, ref, i, j, n);
         return 1;
       }
       if ((old_candidates & (old_candidates - 1)) && !(cells[y][j] & (cells[y][j] - 1))) {
         if (attempt_rm_candidate(ref, cells, y, j, n)) {
-          recalc_all(cells, ref, i, j, n);
           return 1;
         }
       }
@@ -306,17 +172,15 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
   int same_block = nz1 == z1 && nz2 == z2;
   for (int a = same_block ? ni : z1; a < z1 + BLK_WIDTH; a++) {
     for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-      if ((same_block && (a > ni || (a == ni && b > nj))) || 
+      if ((same_block && (a > ni || (a == ni && b > nj)) && !(a == i && b == j)) || 
           (!same_block && !(a == i && b == j))) {
         uint16_t old_candidates = cells[a][b];
         cells[a][b] &= elim;
         if (!cells[a][b]) {
-          recalc_all(cells, ref, i, j, n);
           return 1;
         }
         if ((old_candidates & (old_candidates - 1)) && !(cells[a][b] & (cells[a][b] - 1))) {
           if (attempt_rm_candidate(ref, cells, a, b, n)) {
-            recalc_all(cells, ref, i, j, n);
             return 1;
           }
         }
@@ -324,7 +188,6 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
     }
   }
   if (!is_valid(cells)) {
-    recalc_all(cells, ref, i, j, n);
     return 1;
   }
   return 0;
@@ -400,7 +263,7 @@ int main(int argc, char **argv) {
 
   int n = 0; // Current location in grid
   while (n < N_CELLS && !is_solved(rowfin, colfin, blkfin)) {
-    while (is_valid((const uint16_t(*)[HOUSE_SZ]) cells)) {
+    while (is_valid((const uint16_t(*)[HOUSE_SZ]) cells) && n < N_CELLS) {
       // Find next unsolved cell
       int i = n / HOUSE_SZ;
       int j = n % HOUSE_SZ;
@@ -408,11 +271,6 @@ int main(int argc, char **argv) {
         n++;
         i = n / HOUSE_SZ;
         j = n % HOUSE_SZ;
-      }
-
-      if (n >= N_CELLS) {
-        printf("Not solved\n");
-        return 1;
       }
 
       // Construct transformation
@@ -427,12 +285,13 @@ int main(int argc, char **argv) {
       trans->solution = 1 << solution;
       trans->candidates = cells[i][j];
       trans->tried = 1 << solution;
+      trans->cells = malloc(HOUSE_SZ * HOUSE_SZ * sizeof(uint16_t));
+      copy_cells(cells, trans->cells);
       cells[i][j] = trans->solution;
       stack_push(&transforms, trans);
 
-      if (attempt_rm_candidate(ref, cells, i, j, n)) {
-        break;
-      }
+      // TODO Add fail fast - pay attention to return value
+      attempt_rm_candidate(ref, cells, i, j, n);
 
       update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
     }
@@ -442,6 +301,7 @@ int main(int argc, char **argv) {
     struct transform *trans = NULL;
     do {
       if (trans) {
+        free(trans->cells);
         free(trans);
       }
 
@@ -452,35 +312,25 @@ int main(int argc, char **argv) {
         exit(1);
       }
 
-      int i = trans->i;
-      int j = trans->j;
-      n = i * HOUSE_SZ + j;
-      uint16_t solution = trans->solution; // Current, invalid solution
-      cells[i][j] = trans->candidates;
-
-      // Reverse effect on houses
-      recalc_all(cells, ref, i, j, n);
-
-      update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
     } while ((trans->candidates & (~trans->tried)) == 0);
 
-    if (trans) {
-      uint16_t remaining = trans->candidates & ~trans->tried;
+    n = trans->i * HOUSE_SZ + trans->j;
 
-      // Construct transformation
-      int solution = 0;
-      while (!((remaining >> solution) & 1)) {
-        solution++;
-      }
+    copy_cells(trans->cells, cells);
 
-      trans->solution = 1 << solution;
-      trans->candidates = cells[trans->i][trans->j];
-      trans->tried |= trans->solution;
-      cells[trans->i][trans->j] = trans->solution;
-      stack_push(&transforms, trans);
-
-      attempt_rm_candidate(ref, cells, trans->i, trans->j, n);
+    // Construct transformation
+    int solution = 0;
+    uint16_t remaining = trans->candidates & ~trans->tried;
+    while (!((remaining >> solution) & 1)) {
+      solution++;
     }
+
+    trans->solution = 1 << solution;
+    trans->tried |= trans->solution;
+    cells[trans->i][trans->j] = trans->solution;
+    stack_push(&transforms, trans);
+
+    attempt_rm_candidate(ref, cells, trans->i, trans->j, n);
     update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
   }
 
