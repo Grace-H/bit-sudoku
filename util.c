@@ -20,6 +20,14 @@ int bit_count(const uint16_t n) {
   return count;
 }
 
+void copy_cells(uint16_t src[HOUSE_SZ][HOUSE_SZ], uint16_t dst[HOUSE_SZ][HOUSE_SZ]) {
+  for (int i = 0; i < HOUSE_SZ; i++) {
+    for (int j = 0; j < HOUSE_SZ; j++) {
+      dst[i][j] = src[i][j];
+    }
+  }
+}
+
 int cells_str(uint16_t cells[HOUSE_SZ][HOUSE_SZ], char *buf, int n) {
   if (n < (HOUSE_SZ + 1) * HOUSE_SZ) {
     LOG("too short");

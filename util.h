@@ -13,6 +13,7 @@
     __func__, __LINE__, ##__VA_ARGS__)
 
 int bit_count(const uint16_t n);
+void copy_cells(uint16_t src[HOUSE_SZ][HOUSE_SZ], uint16_t dst[HOUSE_SZ][HOUSE_SZ]);
 
 int cells_str(uint16_t cells[HOUSE_SZ][HOUSE_SZ], char *buf, int n);
 int vec_str(const uint16_t vec, char *buf, int n);
