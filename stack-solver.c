@@ -109,8 +109,8 @@ void calc_candidates(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
 
   int z1, z2;
   blk_coords(blk_index(i, j), &z1, &z2);
-  for (int a = z1; a < BLK_WIDTH; a++) {
-    for (int b = z2; b < BLK_WIDTH; b++) {
+  for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+    for (int b = z2; b < z2 + BLK_WIDTH; b++) {
       if (!(a == i && b == j)) {
         if (!(cells[a][b] & (cells[a][b] - 1))) {
           cells[i][j] &= ~cells[a][b];
