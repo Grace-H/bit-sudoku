@@ -91,7 +91,6 @@ int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
 // Eliminate as candidate value of solved cell & propagate any other
 // solved cells process creates
 void init_rm_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
-  printf("init_rm: %d, %d\n", i, j);
   uint16_t elim = ~cells[i][j];
 
   for (int x = 0; x < HOUSE_SZ; x++) {
@@ -196,7 +195,7 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
 int main(int argc, char **argv) {
 
   if (argc != 2) {
-    fprintf(stderr, "Usage: %s FILE\n", argv[0]);
+    fprintf(stderr, "Usage: %s <puzzle file>\n", argv[0]);
     return 1;
   }
 
@@ -220,7 +219,8 @@ int main(int argc, char **argv) {
   for (int i = 0; i < HOUSE_SZ; i++) {
     int ret = fscanf(f, "%9c\n", buf);
     if (ret < 1) {
-      perror("fgets");
+      perror("fscanf");
+      fclose(f);
       return 1;
     }
 
@@ -232,11 +232,14 @@ int main(int argc, char **argv) {
           init_rm_candidate(cells, i, j);
         } else {
           fprintf(stderr, "Invalid digit: %d\n", d);
+          fclose(f);
           return 1;
         }
       }
     }
   }
+
+  fclose(f);
 
   // Cross off candidates in all unsolved cells
   uint16_t rowfin[HOUSE_SZ];
@@ -273,6 +276,9 @@ int main(int argc, char **argv) {
         j = n % HOUSE_SZ;
       }
 
+      if (n == N_CELLS)
+        break;
+
       // Construct transformation
       int solution = 0;
       while (!((cells[i][j] >> solution) & 1)) {
@@ -295,6 +301,9 @@ int main(int argc, char **argv) {
 
       update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
     }
+
+    if (n == N_CELLS)
+      continue;
 
     // Revert changes and attempt a different solution
     // Identify first prior transformation on a cell with untried candidates
@@ -335,6 +344,12 @@ int main(int argc, char **argv) {
   }
 
   printf("Solved");
+
+  struct transform *trans = NULL;
+  while ((trans = stack_pop(&transforms))) {
+    free(trans->cells);
+    free(trans);
+  }
   return 0;
 }
 
