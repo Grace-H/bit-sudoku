@@ -266,8 +266,11 @@ int main(int argc, char **argv) {
 
   int n = 0; // Current location in grid
   while (n < N_CELLS && !is_solved(rowfin, colfin, blkfin)) {
-    while (is_valid((const uint16_t(*)[HOUSE_SZ]) cells) && n < N_CELLS) {
-      // Find next unsolved cell
+    struct transform *trans = NULL;
+
+    // Perform transformation
+    if (is_valid((const uint16_t(*)[HOUSE_SZ]) cells)) {
+      // If valid, choose next unsolved cell
       int i = n / HOUSE_SZ;
       int j = n % HOUSE_SZ;
       while ((n < N_CELLS) && !(cells[i][j] & (cells[i][j] - 1))) {
@@ -285,61 +288,50 @@ int main(int argc, char **argv) {
         solution++;
       }
 
-      struct transform *trans = malloc(sizeof(struct transform));
+      trans = malloc(sizeof(struct transform));
       trans->i = i;
       trans->j = j;
       trans->solution = 1 << solution;
       trans->candidates = cells[i][j];
       trans->tried = 1 << solution;
       trans->cells = malloc(HOUSE_SZ * HOUSE_SZ * sizeof(uint16_t));
-      copy_cells(cells, trans->cells);
+      copy_cells(cells, (uint16_t(*)[HOUSE_SZ]) trans->cells);
       cells[i][j] = trans->solution;
       stack_push(&transforms, trans);
+    } else {
+      // Revert to first prior transformation on cell with untried candidates
+      do {
+        if (trans) {
+          free(trans->cells);
+          free(trans);
+        }
 
-      // TODO Add fail fast - pay attention to return value
-      attempt_rm_candidate(ref, cells, i, j, n);
+        trans = stack_pop(&transforms);
 
-      update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
-    }
+        if (!trans) {
+          printf("Not solved\n");
+          return 1;
+        }
+      } while ((trans->candidates & ~trans->tried) == 0);
 
-    if (n == N_CELLS)
-      continue;
+      n = trans->i * HOUSE_SZ + trans->j;
 
-    // Revert changes and attempt a different solution
-    // Identify first prior transformation on a cell with untried candidates
-    struct transform *trans = NULL;
-    do {
-      if (trans) {
-        free(trans->cells);
-        free(trans);
+      copy_cells((uint16_t(*)[HOUSE_SZ]) trans->cells, cells);
+
+      // Construct transformation
+      int solution = 0;
+      uint16_t remaining = trans->candidates & ~trans->tried;
+      while (!((remaining >> solution) & 1)) {
+        solution++;
       }
 
-      trans = stack_pop(&transforms);
-
-      if (!trans) {
-        LOG("No remaining transformations--unable to revert further");
-        exit(1);
-      }
-
-    } while ((trans->candidates & (~trans->tried)) == 0);
-
-    n = trans->i * HOUSE_SZ + trans->j;
-
-    copy_cells(trans->cells, cells);
-
-    // Construct transformation
-    int solution = 0;
-    uint16_t remaining = trans->candidates & ~trans->tried;
-    while (!((remaining >> solution) & 1)) {
-      solution++;
+      trans->solution = 1 << solution;
+      trans->tried |= trans->solution;
+      cells[trans->i][trans->j] = trans->solution;
+      stack_push(&transforms, trans);
     }
-
-    trans->solution = 1 << solution;
-    trans->tried |= trans->solution;
-    cells[trans->i][trans->j] = trans->solution;
-    stack_push(&transforms, trans);
-
     attempt_rm_candidate(ref, cells, trans->i, trans->j, n);
+
     update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
   }
 
