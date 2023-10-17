@@ -191,25 +191,24 @@ int main(int argc, char **argv) {
         j = n % HOUSE_SZ;
       }
 
-      if (n == N_CELLS)
+      if (n == N_CELLS) {
         break;
+      }
 
       // Construct transformation
-      int solution = 0;
-      while (!((cells[i][j] >> solution) & 1)) {
-        solution++;
+      uint16_t solution = 1;
+      while (!(cells[i][j] & solution)) {
+        solution <<= 1;
       }
 
       trans = malloc(sizeof(struct transform));
       trans->i = i;
       trans->j = j;
-      trans->solution = 1 << solution;
+      trans->solution = solution;
       trans->candidates = cells[i][j];
-      trans->tried = 1 << solution;
+      trans->tried = solution;
       trans->cells = malloc(HOUSE_SZ * HOUSE_SZ * sizeof(uint16_t));
       copy_cells(cells, (uint16_t(*)[HOUSE_SZ]) trans->cells);
-      cells[i][j] = trans->solution;
-      stack_push(&transforms, trans);
     } else {
       // Revert to first prior transformation on cell with untried candidates
       do {
@@ -231,17 +230,18 @@ int main(int argc, char **argv) {
       copy_cells((uint16_t(*)[HOUSE_SZ]) trans->cells, cells);
 
       // Construct transformation
-      int solution = 0;
-      uint16_t remaining = trans->candidates & ~trans->tried;
-      while (!((remaining >> solution) & 1)) {
-        solution++;
+      uint16_t solution = 1;
+      uint16_t remaining = trans->candidates ^ trans->tried;
+      while (!(remaining & solution)) {
+        solution <<= 1;
       }
 
-      trans->solution = 1 << solution;
-      trans->tried |= trans->solution;
-      cells[trans->i][trans->j] = trans->solution;
-      stack_push(&transforms, trans);
+      trans->solution = solution;
+      trans->tried |= solution;
     }
+
+    stack_push(&transforms, trans);
+    cells[trans->i][trans->j] = trans->solution;
     remove_candidate(cells, trans->i, trans->j);
   }
 
