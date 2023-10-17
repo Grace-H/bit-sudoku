@@ -128,7 +128,7 @@ void init_rm_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
 // Eliminate as candidate value of solved cell & propagate any other
 // solved cells process creates
 // Difference from init_rm: Won't touch before n, fails fast if error
-int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j, int n) {
+int attempt_rm_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j, int n) {
   int ni = n / HOUSE_SZ;
   int nj = n % HOUSE_SZ;
   int nz1, nz2;
@@ -144,7 +144,7 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
         return 1;
       }
       if ((old_candidates & (old_candidates - 1)) && !(cells[i][x] & (cells[i][x] - 1))) {
-        if (attempt_rm_candidate(ref, cells, i, x, n)) {
+        if (attempt_rm_candidate(cells, i, x, n)) {
           return 1;
         }
       }
@@ -159,7 +159,7 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
         return 1;
       }
       if ((old_candidates & (old_candidates - 1)) && !(cells[y][j] & (cells[y][j] - 1))) {
-        if (attempt_rm_candidate(ref, cells, y, j, n)) {
+        if (attempt_rm_candidate(cells, y, j, n)) {
           return 1;
         }
       }
@@ -179,7 +179,7 @@ int attempt_rm_candidate(const uint16_t ref[HOUSE_SZ][HOUSE_SZ], uint16_t cells[
           return 1;
         }
         if ((old_candidates & (old_candidates - 1)) && !(cells[a][b] & (cells[a][b] - 1))) {
-          if (attempt_rm_candidate(ref, cells, a, b, n)) {
+          if (attempt_rm_candidate(cells, a, b, n)) {
             return 1;
           }
         }
@@ -252,14 +252,6 @@ int main(int argc, char **argv) {
 
   update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
 
-  // Initialize copy for reference of original puzzle
-  uint16_t ref[HOUSE_SZ][HOUSE_SZ];
-  for (int i = 0; i < HOUSE_SZ; i++) {
-    for (int j = 0; j < HOUSE_SZ; j++) {
-      ref[i][j] = cells[i][j];
-    }
-  }
-
   // Initialize stack for tracking transformations
   struct stack transforms;
   stack_init(&transforms);
@@ -330,7 +322,7 @@ int main(int argc, char **argv) {
       cells[trans->i][trans->j] = trans->solution;
       stack_push(&transforms, trans);
     }
-    attempt_rm_candidate(ref, cells, trans->i, trans->j, n);
+    attempt_rm_candidate(cells, trans->i, trans->j, n);
 
     update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
   }
