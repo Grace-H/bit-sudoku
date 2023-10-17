@@ -40,10 +40,11 @@ static inline int cell_index(int i, int j) {
   return i * HOUSE_SZ + j;
 }
 
-// Update which values in each row, column, and block have been solved
-// Set bit indicates value exists in region
-static void update_solved(const uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t row[HOUSE_SZ],
-                          uint16_t col[HOUSE_SZ], uint16_t blk[HOUSE_SZ]) {
+// Check if board is solved - each house has one instance of each number
+int is_solved(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+  uint16_t row[HOUSE_SZ];
+  uint16_t col[HOUSE_SZ];
+  uint16_t blk[HOUSE_SZ];
 
   for (int i = 0; i < HOUSE_SZ; i++) {
     row[i] = 0;
@@ -51,22 +52,17 @@ static void update_solved(const uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t row
     blk[i] = 0;
   }
 
+  // If cell has one candidate, mark number as solved in houses
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
-      uint16_t c = cells[i][j];
-      // if only one number is in bitvector (power of 2), mark it as found
-      if (!(c & (c - 1))) {
-        row[i] |= c;
-        col[j] |= c;
-        blk[blk_index(i, j)] |= c;
+      if (!(cells[i][j] & (cells[i][j] - 1))) {
+        row[i] |= cells[i][j];
+        col[j] |= cells[i][j];
+        blk[blk_index(i, j)] |= cells[i][j];
       }
     }
   }
-}
 
-// Check if board is solved - each row/column/block is solved
-// if the xor of all cells is 0x1ff (1 bit set)
-int is_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ], uint16_t blk[HOUSE_SZ]) {
   uint16_t target = (1 << HOUSE_SZ) - 1;
   for (int i = 0; i < HOUSE_SZ; i++) {
     if (row[i] != target || col[i] != target || blk[i] != target) {
@@ -76,7 +72,7 @@ int is_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ], uint16_t blk[HOUSE
   return 1;
 }
 
-// Check if the board is valid - all cells have at least one possibility
+// Check if the board is valid - all cells have at least one candidate
 int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
@@ -241,23 +237,13 @@ int main(int argc, char **argv) {
 
   fclose(f);
 
-  // Cross off candidates in all unsolved cells
-  uint16_t rowfin[HOUSE_SZ];
-  uint16_t colfin[HOUSE_SZ];
-  uint16_t blkfin[HOUSE_SZ];
-
-  memset(&rowfin, 0, HOUSE_SZ * sizeof(uint16_t));
-  memset(&colfin, 0, HOUSE_SZ * sizeof(uint16_t));
-  memset(&blkfin, 0, HOUSE_SZ * sizeof(uint16_t));
-
-  update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
 
   // Initialize stack for tracking transformations
   struct stack transforms;
   stack_init(&transforms);
 
   int n = 0; // Current location in grid
-  while (n < N_CELLS && !is_solved(rowfin, colfin, blkfin)) {
+  while (n < N_CELLS && !is_solved((const uint16_t(*)[HOUSE_SZ]) cells)) {
     struct transform *trans = NULL;
 
     // Perform transformation
@@ -323,8 +309,6 @@ int main(int argc, char **argv) {
       stack_push(&transforms, trans);
     }
     attempt_rm_candidate(cells, trans->i, trans->j, n);
-
-    update_solved((const uint16_t(*)[HOUSE_SZ]) cells, rowfin, colfin, blkfin);
   }
 
   printf("Solved");
