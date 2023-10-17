@@ -86,14 +86,14 @@ int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
 
 // Eliminate as candidate value of solved cell & propagate any other
 // solved cells process creates
-void init_rm_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
+void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   uint16_t elim = ~cells[i][j];
 
   for (int x = 0; x < HOUSE_SZ; x++) {
     if (cells[i][x] & (cells[i][x] - 1)) {
       cells[i][x] &= elim;
       if (!(cells[i][x] & (cells[i][x] - 1))) {
-        init_rm_candidate(cells, i, x);
+        remove_candidate(cells, i, x);
       }
     }
   }
@@ -102,7 +102,7 @@ void init_rm_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
     if (cells[y][j] & (cells[y][j] - 1)) {
       cells[y][j] &= elim;
       if (!(cells[y][j] & (cells[y][j] - 1))) {
-        init_rm_candidate(cells, y, j);
+        remove_candidate(cells, y, j);
       }
     }
   }
@@ -114,79 +114,13 @@ void init_rm_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
       if (cells[a][b] & (cells[a][b] - 1)) {
         cells[a][b] &= elim;
         if (!(cells[a][b] & (cells[a][b] - 1))) {
-          init_rm_candidate(cells, a, b);
+          remove_candidate(cells, a, b);
         }
       }
     }
   }
 }
 
-// Eliminate as candidate value of solved cell & propagate any other
-// solved cells process creates
-// Difference from init_rm: Won't touch before n, fails fast if error
-int attempt_rm_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j, int n) {
-  int ni = n / HOUSE_SZ;
-  int nj = n % HOUSE_SZ;
-  int nz1, nz2;
-  blk_coords(blk_index(ni, nj), &nz1, &nz2);
-
-  uint16_t elim = ~cells[i][j];
-
-  for (int x = i == ni ? nj + 1 : 0; x < HOUSE_SZ; x++) {
-    if (x != j) {
-      uint16_t old_candidates = cells[i][x];
-      cells[i][x] &= elim;
-      if (!cells[i][x]) {
-        return 1;
-      }
-      if ((old_candidates & (old_candidates - 1)) && !(cells[i][x] & (cells[i][x] - 1))) {
-        if (attempt_rm_candidate(cells, i, x, n)) {
-          return 1;
-        }
-      }
-    }
-  }
-
-  for (int y = j == nj ? ni + 1 : 0; y < HOUSE_SZ; y++) {
-    if (y != i) {
-      uint16_t old_candidates = cells[y][j];
-      cells[y][j] &= elim;
-      if (!cells[y][j]) {
-        return 1;
-      }
-      if ((old_candidates & (old_candidates - 1)) && !(cells[y][j] & (cells[y][j] - 1))) {
-        if (attempt_rm_candidate(cells, y, j, n)) {
-          return 1;
-        }
-      }
-    }
-  }
-
-  int z1, z2;
-  blk_coords(blk_index(i, j), &z1, &z2);
-  int same_block = nz1 == z1 && nz2 == z2;
-  for (int a = same_block ? ni : z1; a < z1 + BLK_WIDTH; a++) {
-    for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-      if ((same_block && (a > ni || (a == ni && b > nj)) && !(a == i && b == j)) || 
-          (!same_block && !(a == i && b == j))) {
-        uint16_t old_candidates = cells[a][b];
-        cells[a][b] &= elim;
-        if (!cells[a][b]) {
-          return 1;
-        }
-        if ((old_candidates & (old_candidates - 1)) && !(cells[a][b] & (cells[a][b] - 1))) {
-          if (attempt_rm_candidate(cells, a, b, n)) {
-            return 1;
-          }
-        }
-      }
-    }
-  }
-  if (!is_valid(cells)) {
-    return 1;
-  }
-  return 0;
-}
 
 int main(int argc, char **argv) {
 
@@ -225,7 +159,7 @@ int main(int argc, char **argv) {
         char d = buf[j];
         if (d >= '1' && d <= '9') {
           cells[i][j] = 1 << (d - '1');
-          init_rm_candidate(cells, i, j);
+          remove_candidate(cells, i, j);
         } else {
           fprintf(stderr, "Invalid digit: %d\n", d);
           fclose(f);
@@ -308,7 +242,7 @@ int main(int argc, char **argv) {
       cells[trans->i][trans->j] = trans->solution;
       stack_push(&transforms, trans);
     }
-    attempt_rm_candidate(cells, trans->i, trans->j, n);
+    remove_candidate(cells, trans->i, trans->j);
   }
 
   printf("Solved");
