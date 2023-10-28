@@ -677,6 +677,94 @@ static void pointing_pairs() {
   }
 }
 
+// Pointing tuples strategy: same as pointing pairs, but is agnostic of 
+// group size
+static void pointing_tuples() {
+  // Look for pointing tuples in each block
+  for (int z = 0; z < HOUSE_SZ; z++) {
+    int z1, z2;
+    blk_coords(z, &z1, &z2);
+
+    uint16_t rows[BLK_WIDTH];
+    uint16_t cols[BLK_WIDTH];
+    for (int i = 0; i < BLK_WIDTH; i++) {
+      rows[i] = 0;
+      cols[i] = 0;
+    }
+
+    for (int a = 0; a < BLK_WIDTH; a++) {
+      for (int b = 0; b < BLK_WIDTH; b++) {
+        rows[a] |= cells[z1 + a][z2 + b];
+        cols[b] |= cells[z1 + a][z2 + b];
+      }
+    }
+
+    // Columns
+    for (int i = 0; i < BLK_WIDTH; i++) {
+      for (int j = i + 1; j < BLK_WIDTH; j++) {
+        uint16_t inter = rows[i] & rows[j];
+        if (inter) {
+          for (uint16_t vec = 1; vec < 1 << HOUSE_SZ; vec <<= 1) {
+            if (vec & inter) {
+              int count = 0;
+              int col = 0;
+              for (int k = 0; k < BLK_WIDTH; k++) {
+                if (vec & cols[k]) {
+                  vec &= cols[k];
+                  col = k;
+                  count++;
+                }
+              }
+              if (count == 1) {
+                for (int y = 0; y < HOUSE_SZ; y++) {
+                  if ((y < z1 || y >= z1 + BLK_WIDTH) && cells[y][z2 + col]) {
+                    cells[y][z2 + col] &= ~vec;
+                    if (!(cells[y][z2 + col] & (cells[y][z2 + col] - 1))) {
+                      remove_candidate(y, z2 + col);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Rows
+    for (int j = 0; j < BLK_WIDTH; j++) {
+      for (int i = j + 1; i < BLK_WIDTH; i++) {
+        uint16_t inter = cols[i] & cols[j];
+        if (inter) {
+          for (uint16_t vec = 1; vec < 1 << HOUSE_SZ; vec <<= 1) {
+            if (vec & inter) {
+              int count = 0;
+              int row = 0;
+              for (int k = 0; k < BLK_WIDTH; k++) {
+                if (vec & rows[k]) {
+                  vec &= rows[k];
+                  row = k;
+                  count++;
+                }
+              }
+              if (count == 1) {
+                for (int x = 0; x < HOUSE_SZ; x++) {
+                  if ((x < z2 || x >= z2 + BLK_WIDTH) && cells[z1 + row][x]) {
+                    cells[z1 + row][x] &= ~vec;
+                    if (!(cells[z1 + row][x] & (cells[z1 + row][x] - 1))) {
+                      remove_candidate(z1 + row, x);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 // X-Wing strategy: An x-wing pattern is formed by two houses that have the same
 // candidate pair in the same rows/columns. Eliminate candidate from rows/columns.
 static void x_wing() {
