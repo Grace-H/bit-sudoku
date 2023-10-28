@@ -630,7 +630,7 @@ static void pointing_pairs() {
       }
     }
 
-    if (bit_count(pairs) >= 1) {
+    if (bit_count(pairs) > 0) {
       // Find the pairs of cells with these numbers
       for (int a = z1; a < z1 + BLK_WIDTH; a++) {
         for (int b = z2; b < z2 + BLK_WIDTH; b++) {
