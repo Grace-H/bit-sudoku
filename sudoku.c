@@ -1407,17 +1407,8 @@ int main(int argc, char **argv) {
   update_solved(rowfin, colfin, blkfin);
 
   for (int i = 0; i < 15; i++) {
-    // Do one round of elimination
-    eliminate(rowfin, colfin, blkfin);
     singles();
-
-    hidden_pairs();
-    naked_pairs();
-    pointing_pairs();
-    claiming_pairs();
-    x_wing();
-
-    naked_triplets();
+    pointing_tuples();
 
     update_solved(rowfin, colfin, blkfin);
     if (is_solved(rowfin, colfin, blkfin)) {
