@@ -648,26 +648,6 @@ static void pointing_pairs() {
                     cells[k][b] &= ~pair;
                     if (!(cells[k][b] & (cells[k][b] - 1))) {
                       remove_candidate(k, b);
-
-                      for (int x = 0; x < HOUSE_SZ; x++) {
-                        opts_count[x] = 0;
-                      }
-
-                      for (int a2 = z1; a2 < z1 + BLK_WIDTH; a2++) {
-                        for (int b2 = z2; b2 < z2 + BLK_WIDTH; b2++) {
-                          for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
-                            opts_count[k2] += (cells[a2][b2] >> k2) & 1;
-                          }
-                        }
-                      }
-
-                      pairs = 0;
-                      for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
-                        if (opts_count[k2] == 2) {
-                          pairs |= 1 << k2;
-                        }
-                      }
-
                     }
                   }
                 }
@@ -684,25 +664,6 @@ static void pointing_pairs() {
                     cells[a][k] &= ~pair;
                     if (!(cells[a][k] & (cells[a][k] - 1))) {
                       remove_candidate(a, k);
-
-                      for (int x2 = 0; x2 < HOUSE_SZ; x2++) {
-                        opts_count[x2] = 0;
-                      }
-
-                      for (int a2 = z1; a2 < z1 + BLK_WIDTH; a2++) {
-                        for (int b2 = z2; b2 < z2 + BLK_WIDTH; b2++) {
-                          for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
-                            opts_count[k2] += (cells[a2][b2] >> k2) & 1;
-                          }
-                        }
-                      }
-
-                      pairs = 0;
-                      for (int k2 = 0; k2 < HOUSE_SZ; k2++) {
-                        if (opts_count[k2] == 2) {
-                          pairs |= 1 << k2;
-                        }
-                      }
                     }
                   }
                 }
