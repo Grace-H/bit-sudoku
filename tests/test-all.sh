@@ -24,3 +24,4 @@ for t in "${tests[@]}"
 do
     tests/test.sh $1 "tests/se${t}" &
 done
+wait
