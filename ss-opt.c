@@ -121,6 +121,104 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   }
 }
 
+// Hidden singles strategy
+static void singles(uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+  // Look for hidden singles in each row
+  for (int i = 0; i < HOUSE_SZ; i++) {
+    int opts_count[HOUSE_SZ];
+    for (int x = 0; x < HOUSE_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+    for (int j = 0; j < HOUSE_SZ; j++) {
+      for (int k = 0; k < HOUSE_SZ; k++) {
+        opts_count[k] += (cells[i][j] >> k) & 1;
+      }
+    }
+
+    uint16_t singles = 0;
+    for (int k = 0; k < HOUSE_SZ; k++) {
+      if (opts_count[k] == 1) {
+        singles |= 1 << k;
+      }
+    }
+
+    // Find cells that have one of the hidden singles
+    for (int j = 0; j < HOUSE_SZ; j++) {
+      if ((cells[i][j] & (cells[i][j] - 1)) && (cells[i][j] & singles)) {
+        cells[i][j] &= singles;
+        remove_candidate(cells, i, j);
+      }
+    }
+  }
+
+  // Column
+  for (int j = 0; j < HOUSE_SZ; j++) {
+    // Count number of cells that can hold each number
+    int opts_count[HOUSE_SZ];
+    for (int x = 0; x < HOUSE_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+    for (int i = 0; i < HOUSE_SZ; i++) {
+      for (int k = 0; k < HOUSE_SZ; k++) {
+        opts_count[k] += (cells[i][j] >> k) & 1;
+      }
+    }
+
+    // Create bitvector of numbers with only one possibility
+    uint16_t singles = 0;
+    for (int k = 0; k < HOUSE_SZ; k++) {
+      if (opts_count[k] == 1) {
+        singles |= 1 << k;
+      }
+    }
+
+    // Find cells that have one of the hidden singles
+    for (int i = 0; i < HOUSE_SZ; i++) {
+      if ((cells[i][j] & (cells[i][j] - 1)) && (cells[i][j] & singles)) {
+        cells[i][j] &= singles;
+        remove_candidate(cells, i, j);
+      }
+    }
+  }
+
+  // Block
+  for (int z = 0; z < HOUSE_SZ; z++) {
+    int opts_count[HOUSE_SZ];
+    for (int x = 0; x < HOUSE_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+    int z1, z2;
+    blk_coords(z, &z1, &z2);
+    for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+      for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+        for (int k = 0; k < HOUSE_SZ; k++) {
+          opts_count[k] += (cells[a][b] >> k) & 1;
+        }
+      }
+    }
+
+    uint16_t singles = 0;
+    for (int k = 0; k < HOUSE_SZ; k++) {
+      if (opts_count[k] == 1) {
+        singles |= 1 << k;
+      }
+    }
+
+    // Find cells that have one of the hidden singles
+    for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+      for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+        if ((cells[a][b] & (cells[a][b] - 1)) && (cells[a][b] & singles)) {
+          cells[a][b] &= singles;
+          remove_candidate(cells, a, b);
+        }
+      }
+    }
+  }
+}
+
 
 int main(int argc, char **argv) {
 
@@ -171,13 +269,14 @@ int main(int argc, char **argv) {
 
   fclose(f);
 
+  singles(cells);
 
   // Initialize stack for tracking transformations
   struct stack transforms;
   stack_init(&transforms);
 
   int n = 0; // Current location in grid
-  while (n < N_CELLS && !is_solved((const uint16_t(*)[HOUSE_SZ]) cells)) {
+  while (n < N_CELLS) {
     struct transform *trans = NULL;
 
     // Perform transformation
@@ -220,7 +319,6 @@ int main(int argc, char **argv) {
         trans = stack_pop(&transforms);
 
         if (!trans) {
-          printf("Not solved\n");
           return 1;
         }
       } while ((trans->candidates & ~trans->tried) == 0);
@@ -245,7 +343,6 @@ int main(int argc, char **argv) {
     remove_candidate(cells, trans->i, trans->j);
   }
 
-  printf("Solved");
 
   struct transform *trans = NULL;
   while ((trans = stack_pop(&transforms))) {
