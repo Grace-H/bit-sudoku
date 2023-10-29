@@ -39,16 +39,16 @@ logfile=tests/tmp/log_$level
 touch $logfile
 
 job_count=0
-JOBS_MAX=48
+JOBS_MAX=5
 for file in $2/*
 do
     ((total++))
-    ((jobs_count++))
-    if [ $jobs_count > $JOBS_MAX ] ; then
+    ((job_count++))
+    if [[ $job_count -gt $JOBS_MAX ]] ; then
 	wait -n
+        ((job_count--))
     fi
     solve $1 $file $logfile &
-    ((job_count--))
 done
 wait
 
