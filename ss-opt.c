@@ -260,8 +260,6 @@ int main(int argc, char **argv) {
 
   fclose(f);
 
-  singles(cells);
-
   // Initialize stack for tracking transformations
   struct stack transforms;
   stack_init(&transforms);
