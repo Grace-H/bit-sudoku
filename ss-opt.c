@@ -237,19 +237,19 @@ int main(int argc, char **argv) {
     struct transform *trans = NULL;
 
     // Perform transformation
-    if (is_valid((const uint16_t(*)[HOUSE_SZ]) cells)) {
-      // If valid, choose next unsolved cell
-      int i = n / HOUSE_SZ;
-      int j = n % HOUSE_SZ;
-      while ((n < N_CELLS) && !(cells[i][j] & (cells[i][j] - 1))) {
-        n++;
-        i = n / HOUSE_SZ;
-        j = n % HOUSE_SZ;
-      }
+    int i = n / HOUSE_SZ;
+    int j = n % HOUSE_SZ;
+    while ((n < N_CELLS) && !(cells[i][j] & (cells[i][j] - 1))) {
+      n++;
+      i = n / HOUSE_SZ;
+      j = n % HOUSE_SZ;
+    }
 
-      if (n == N_CELLS) {
-        break;
-      }
+    if (n == N_CELLS) {
+      break;
+    }
+
+    if (cells[i][j]) {
 
       // Construct transformation
       uint16_t solution = 1;
