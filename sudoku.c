@@ -338,10 +338,12 @@ static void naked_pairs() {
 // that are the only ones that can have 2 options
 static void hidden_pairs() {
 
+  int opts_count[HOUSE_SZ];
+  uint16_t pairs;
+
   // Look for hidden pairs in each row
   for (int i = 0; i < HOUSE_SZ; i++) {
     // Count number of cells that can hold each number
-    int opts_count[HOUSE_SZ];
     for (int x = 0; x < HOUSE_SZ; x++) {
       opts_count[x] = 0;
     }
@@ -353,7 +355,7 @@ static void hidden_pairs() {
     }
 
     // Make bitvector of numbers that can only go in two cells
-    uint16_t pairs = 0;
+    pairs = 0;
     for (int k = 0; k < HOUSE_SZ; k++) {
       if (opts_count[k] == 2) {
         pairs |= 1 << k;
@@ -363,14 +365,12 @@ static void hidden_pairs() {
     if(bit_count(pairs) >= 2) {
       // Find pairs of cells that share two of the possibilities
       for (int j = 0; j < HOUSE_SZ; j++) {
-        uint16_t inter = cells[i][j] & pairs;
-        if (bit_count(inter) >= 2) {
-          for (int x = j + 1; x < HOUSE_SZ; x++) {
-            if (bit_count(inter & cells[i][x]) == 2) {
-              cells[i][j] = inter;
-              cells[i][x] = inter;
-              pairs &= ~inter;
-            }
+        for (int x = j + 1; x < HOUSE_SZ; x++) {
+          uint16_t inter = cells[i][j] & cells[i][x] & pairs;
+          if (bit_count(inter) == 2) {
+            cells[i][j] = inter;
+            cells[i][x] = inter;
+            pairs &= ~inter;
           }
         }
       }
@@ -379,8 +379,6 @@ static void hidden_pairs() {
 
   // Column
   for (int j = 0; j < HOUSE_SZ; j++) {
-    // Count number of cells that can hold each number
-    int opts_count[HOUSE_SZ];
     for (int x = 0; x < HOUSE_SZ; x++) {
       opts_count[x] = 0;
     }
@@ -391,8 +389,7 @@ static void hidden_pairs() {
       }
     }
 
-    // Make bitvector of numbers that can only go in two cells
-    uint16_t pairs = 0;
+    pairs = 0;
     for (int k = 0; k < HOUSE_SZ; k++) {
       if (opts_count[k] == 2) {
         pairs |= 1 << k;
@@ -400,16 +397,13 @@ static void hidden_pairs() {
     }
 
     if(bit_count(pairs) >= 2) {
-      // Find pairs of cells that share two of the possibilities
       for (int i = 0; i < HOUSE_SZ; i++) {
-        uint16_t inter = cells[i][j] & pairs;
-        if (bit_count(inter) >= 2) {
-          for (int y = i + 1; y < HOUSE_SZ; y++) {
-            if (bit_count(inter & cells[y][j]) == 2) {
-              cells[i][j] = inter;
-              cells[y][j] = inter;
-              pairs &= ~inter;
-            }
+        for (int y = i + 1; y < HOUSE_SZ; y++) {
+          uint16_t inter = cells[i][j] & cells[y][j] & pairs;
+          if (bit_count(inter) == 2) {
+            cells[i][j] = inter;
+            cells[y][j] = inter;
+            pairs &= ~inter;
           }
         }
       }
@@ -418,8 +412,6 @@ static void hidden_pairs() {
 
   // Block
   for (int z = 0; z < HOUSE_SZ; z++) {
-    // Count number of cells that can hold each number
-    int opts_count[HOUSE_SZ];
     for (int x = 0; x < HOUSE_SZ; x++) {
       opts_count[x] = 0;
     }
@@ -434,8 +426,7 @@ static void hidden_pairs() {
       }
     }
 
-    // Make bitvector of numbers that can only go in two cells
-    uint16_t pairs = 0;
+    pairs = 0;
     for (int k = 0; k < HOUSE_SZ; k++) {
       if (opts_count[k] == 2) {
         pairs |= 1 << k;
@@ -443,18 +434,16 @@ static void hidden_pairs() {
     }
 
     if (bit_count(pairs) >= 2) {
-      // Find pairs of cells that share two of the possibilities
       for (int a = z1; a < z1 + BLK_WIDTH; a++) {
         for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-          uint16_t inter = cells[a][b] & pairs;
-          if (bit_count(inter) >= 2) {
-            for (int x = z1; x < z1 + BLK_WIDTH; x++) {
-              for (int y = z2; y < z2 + BLK_WIDTH; y++) {
-                if (!(a == x && b == y) &&
-                    bit_count(inter & cells[x][y]) >= 2) {
+          for (int x = a; x < z1 + BLK_WIDTH; x++) {
+            for (int y = z2; y < z2 + BLK_WIDTH; y++) {
+              if (x > a || (x == a && y > b)) {
+                uint16_t inter = cells[a][b] & cells[x][y] & pairs;
+                if (bit_count(inter) == 2) {
                   cells[a][b] = inter;
                   cells[x][y] = inter;
-                  pairs &= ~inter;
+                  pairs &= ~cells[a][b];
                 }
               }
             }
@@ -1407,8 +1396,10 @@ int main(int argc, char **argv) {
   update_solved(rowfin, colfin, blkfin);
 
   for (int i = 0; i < 15; i++) {
-    singles();
+    hidden_pairs();
+    claiming_pairs();
     pointing_tuples();
+    singles();
 
     update_solved(rowfin, colfin, blkfin);
     if (is_solved(rowfin, colfin, blkfin)) {
