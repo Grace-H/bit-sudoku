@@ -40,38 +40,6 @@ static inline int cell_index(int i, int j) {
   return i * HOUSE_SZ + j;
 }
 
-// Check if board is solved - each house has one instance of each number
-int is_solved(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
-  uint16_t row[HOUSE_SZ];
-  uint16_t col[HOUSE_SZ];
-  uint16_t blk[HOUSE_SZ];
-
-  for (int i = 0; i < HOUSE_SZ; i++) {
-    row[i] = 0;
-    col[i] = 0;
-    blk[i] = 0;
-  }
-
-  // If cell has one candidate, mark number as solved in houses
-  for (int i = 0; i < HOUSE_SZ; i++) {
-    for (int j = 0; j < HOUSE_SZ; j++) {
-      if (!(cells[i][j] & (cells[i][j] - 1))) {
-        row[i] |= cells[i][j];
-        col[j] |= cells[i][j];
-        blk[blk_index(i, j)] |= cells[i][j];
-      }
-    }
-  }
-
-  uint16_t target = (1 << HOUSE_SZ) - 1;
-  for (int i = 0; i < HOUSE_SZ; i++) {
-    if (row[i] != target || col[i] != target || blk[i] != target) {
-      return 0;
-    }
-  }
-  return 1;
-}
-
 // Check if the board is valid - all cells have at least one candidate
 int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
   for (int i = 0; i < HOUSE_SZ; i++) {
