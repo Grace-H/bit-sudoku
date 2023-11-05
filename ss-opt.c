@@ -92,18 +92,12 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   for (int x = 0; x < HOUSE_SZ; x++) {
     if (cells[i][x] & (cells[i][x] - 1)) {
       cells[i][x] &= elim;
-      if (!(cells[i][x] & (cells[i][x] - 1))) {
-        remove_candidate(cells, i, x);
-      }
     }
   }
 
   for (int y = 0; y < HOUSE_SZ; y++) {
     if (cells[y][j] & (cells[y][j] - 1)) {
       cells[y][j] &= elim;
-      if (!(cells[y][j] & (cells[y][j] - 1))) {
-        remove_candidate(cells, y, j);
-      }
     }
   }
 
@@ -113,9 +107,6 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
     for (int b = z2; b < z2 + BLK_WIDTH; b++) {
       if (cells[a][b] & (cells[a][b] - 1)) {
         cells[a][b] &= elim;
-        if (!(cells[a][b] & (cells[a][b] - 1))) {
-          remove_candidate(cells, a, b);
-        }
       }
     }
   }
