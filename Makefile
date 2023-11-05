@@ -1,5 +1,6 @@
 CC = gcc
 CFLAGS = -g -Wall -std=gnu99 -fstack-protector-all
+OFLAGS = -O3 -std=gnu99
 
 .PHONY: all clean
 
@@ -12,11 +13,11 @@ stack-solver: stack-solver.c util.o
 	$(CC) $(CFLAGS) -o stack-solver stack-solver.c util.o
 
 ss-opt: ss-opt.c util.o
-	$(CC) $(CFLAGS) -o ss-opt ss-opt.c util.o
+	$(CC) $(OFLAGS) -o ss-opt ss-opt.c util.o
 
 util.o: util.c
-	$(CC) $(CFLAGS) -c util.c
+	$(CC) $(OFLAGS) -c util.c
 
 clean:
 	rm -f *.o
-	rm -f sudoku stack-solver
+	rm -f sudoku stack-solver ss-opt
