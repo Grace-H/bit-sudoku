@@ -91,25 +91,6 @@ void remove_candidate(int i, int j) {
   }
 }
 
-// Eliminate possibilites for each cell based on what values are already
-// in each row/column/block
-static void eliminate(const uint16_t row[HOUSE_SZ], const uint16_t col[HOUSE_SZ],
-    const uint16_t blk[HOUSE_SZ]) {
-  for (int i = 0; i < HOUSE_SZ; i++) {
-    for (int j = 0; j < HOUSE_SZ; j++) {
-      // if this cell is not solved, cross off possibilities
-      if(cells[i][j]) {
-        cells[i][j] &= ~row[i];
-        cells[i][j] &= ~col[j];
-        cells[i][j] &= ~blk[blk_index(i, j)];
-        if (!(cells[i][j] & (cells[i][j] - 1))) {
-          remove_candidate(i, j);
-        }
-      }
-    }
-  }
-}
-
 // Hidden singles strategy
 static void singles() {
   // Look for hidden singles in each row
