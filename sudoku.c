@@ -730,6 +730,136 @@ static void pointing_tuples() {
   }
 }
 
+static void hidden_triplets() {
+  int opts_count[HOUSE_SZ];
+  uint16_t triples;
+
+  // Look for hidden triplets in each row
+  for (int i = 0; i < HOUSE_SZ; i++) {
+    // Count number of cells that can hold each number
+    for (int x = 0; x < HOUSE_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+    for (int j = 0; j < HOUSE_SZ; j++) {
+      for (int k = 0; k < HOUSE_SZ; k++) {
+        opts_count[k] += (cells[i][j] >> k) & 1;
+      }
+    }
+
+    // Make bitvector of numbers that can only go in three cells
+    triples = 0;
+    for (int k = 0; k < HOUSE_SZ; k++) {
+      if (opts_count[k] == 3) {
+        triples |= 1 << k;
+      }
+    }
+
+    if(bit_count(triples) >= 3) {
+      // Find triples of cells that share three of the possibilities
+      for (int j = 0; j < HOUSE_SZ; j++) {
+        for (int jj = j + 1; jj < HOUSE_SZ; jj++) {
+          for (int jjj = jj + 1; jjj < HOUSE_SZ; jjj++) {
+            uint16_t inter = cells[i][j] & cells[i][jj] & cells[i][jjj] & triples;
+            if (bit_count(inter) == 3) {
+              cells[i][j] = inter;
+              cells[i][jj] = inter;
+              cells[i][jjj] = inter;
+              triples &= ~inter;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Column
+  for (int j = 0; j < HOUSE_SZ; j++) {
+    for (int x = 0; x < HOUSE_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+    for (int i = 0; i < HOUSE_SZ; i++) {
+      for (int k = 0; k < HOUSE_SZ; k++) {
+        opts_count[k] += (cells[i][j] >> k) & 1;
+      }
+    }
+
+    triples = 0;
+    for (int k = 0; k < HOUSE_SZ; k++) {
+      if (opts_count[k] == 3) {
+        triples |= 1 << k;
+      }
+    }
+
+    if(bit_count(triples) >= 3) {
+      for (int i = 0; i < HOUSE_SZ; i++) {
+        for (int ii = i + 1; ii < HOUSE_SZ; ii++) {
+          for (int iii = ii + 1; iii < HOUSE_SZ; iii++) {
+            uint16_t inter = cells[i][j] & cells[ii][j] & cells[iii][j] & triples;
+            if (bit_count(inter) == 3) {
+              cells[i][j] = inter;
+              cells[ii][j] = inter;
+              cells[iii][j] = inter;
+              triples &= ~inter;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // Block
+  for (int z = 0; z < HOUSE_SZ; z++) {
+    for (int x = 0; x < HOUSE_SZ; x++) {
+      opts_count[x] = 0;
+    }
+
+    int z1, z2;
+    blk_coords(z, &z1, &z2);
+    for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+      for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+        for (int k = 0; k < HOUSE_SZ; k++) {
+          opts_count[k] += (cells[a][b] >> k) & 1;
+        }
+      }
+    }
+
+    triples = 0;
+    for (int k = 0; k < HOUSE_SZ; k++) {
+      if (opts_count[k] == 3) {
+        triples |= 1 << k;
+      }
+    }
+
+    if (bit_count(triples) >= 3) {
+      for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+        for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+          for (int aa = a; aa < z1 + BLK_WIDTH; aa++) {
+            for (int bb = z2; bb < z2 + BLK_WIDTH; bb++) {
+              if (aa > a || (aa == a && bb > b)) {
+                for (int aaa = aa; aaa < z1 + BLK_WIDTH; aaa++) {
+                  for (int bbb = z2; bbb < z2 + BLK_WIDTH; bbb++) {
+                    if (aaa > aa || (aaa == aa && bbb > bb)) {
+                      uint16_t inter = cells[a][b] & cells[aa][bb] & cells[aaa][bbb] & triples;
+                      if (bit_count(inter) == 3) {
+                        cells[a][b] = inter;
+                        cells[aa][bb] = inter;
+                        cells[aaa][bbb] = inter;
+                        triples &= ~inter;
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 // X-Wing strategy: An x-wing pattern is formed by two houses that have the same
 // candidate pair in the same rows/columns. Eliminate candidate from rows/columns.
 static void x_wing() {
@@ -1373,6 +1503,7 @@ int main(int argc, char **argv) {
     hidden_pairs();
     claiming_pairs();
     pointing_tuples();
+    hidden_triplets();
     singles();
 
     if (is_solved(rowfin, colfin, blkfin)) {
