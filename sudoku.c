@@ -24,10 +24,9 @@ static void blk_coords(int n, int *i, int *j) {
   *j = (n % BLK_WIDTH) * BLK_WIDTH;
 }
 
-// Update which values in each row, column, and block have been solved
-// Set bit indicates value exists in house
-static void update_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ],
-    uint16_t blk[HOUSE_SZ]) {
+// Check if board is solved - each row/column/block is solved
+// if the xor of all cells is 0x1ff (1 bit set)
+int is_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ], uint16_t blk[HOUSE_SZ]) {
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
       uint16_t c = solved[i][j];
@@ -38,14 +37,10 @@ static void update_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ],
       }
     }
   }
-}
 
-// Check if board is solved - each row/column/block is solved
-// if the xor of all cells is 0x1ff (1 bit set)
-int is_solved(uint16_t row[HOUSE_SZ], uint16_t col[HOUSE_SZ], uint16_t blk[HOUSE_SZ]) {
   uint16_t target = (1 << HOUSE_SZ) - 1;
   for (int i = 0; i < HOUSE_SZ; i++) {
-    if (row[i] != target || col[i] != target || blk[i] != target) {
+    if ((row[i] & col[i] & blk[i]) ^ target) {
       return 0;
     }
   }
@@ -1374,15 +1369,12 @@ int main(int argc, char **argv) {
   memset(&colfin, 0, HOUSE_SZ * sizeof(uint16_t));
   memset(&blkfin, 0, HOUSE_SZ * sizeof(uint16_t));
 
-  update_solved(rowfin, colfin, blkfin);
-
   for (int i = 0; i < 15; i++) {
     hidden_pairs();
     claiming_pairs();
     pointing_tuples();
     singles();
 
-    update_solved(rowfin, colfin, blkfin);
     if (is_solved(rowfin, colfin, blkfin)) {
       printf("Solved in %d iterations\n", i);
       return 0;
