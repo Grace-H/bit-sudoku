@@ -20,7 +20,7 @@ struct transform {
   uint16_t solution;   // Current, tried solution of cell
   uint16_t candidates; // Former candidates of cell
   uint16_t tried;      // Candidates that have been tried as solutions
-  uint16_t **cells;    // Copy of cells before this trans applied
+  uint16_t (* cells)[HOUSE_SZ];    // Copy of cells before this trans applied
 };
 
 // Get block number (0->9 reading left-right top-bottom) from i,j coordinates
@@ -208,7 +208,7 @@ int main(int argc, char **argv) {
       trans->candidates = cells[i][j];
       trans->tried = solution;
       trans->cells = malloc(HOUSE_SZ * HOUSE_SZ * sizeof(uint16_t));
-      copy_cells(cells, (uint16_t(*)[HOUSE_SZ]) trans->cells);
+      copy_cells(cells, trans->cells);
     } else {
       // Revert to first prior transformation on cell with untried candidates
       do {
@@ -227,7 +227,7 @@ int main(int argc, char **argv) {
 
       n = trans->i * HOUSE_SZ + trans->j;
 
-      copy_cells((uint16_t(*)[HOUSE_SZ]) trans->cells, cells);
+      copy_cells(trans->cells, cells);
 
       // Construct transformation
       uint16_t solution = 1;
