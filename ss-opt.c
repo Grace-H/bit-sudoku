@@ -20,7 +20,7 @@ struct transform {
   uint16_t solution;   // Current, tried solution of cell
   uint16_t candidates; // Former candidates of cell
   uint16_t tried;      // Candidates that have been tried as solutions
-  uint16_t **cells;    // Copy of cells before this trans applied
+  uint16_t (* cells)[HOUSE_SZ];    // Copy of cells before this trans applied
 };
 
 // Get block number (0->9 reading left-right top-bottom) from i,j coordinates
@@ -58,24 +58,18 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   uint16_t elim = ~cells[i][j];
 
   for (int x = 0; x < HOUSE_SZ; x++) {
-    if (cells[i][x] & (cells[i][x] - 1)) {
-      cells[i][x] &= elim;
-    }
+    cells[i][x] &= elim;
   }
 
   for (int y = 0; y < HOUSE_SZ; y++) {
-    if (cells[y][j] & (cells[y][j] - 1)) {
-      cells[y][j] &= elim;
-    }
+    cells[y][j] &= elim;
   }
 
   int z1, z2;
   blk_coords(blk_index(i, j), &z1, &z2);
   for (int a = z1; a < z1 + BLK_WIDTH; a++) {
     for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-      if (cells[a][b] & (cells[a][b] - 1)) {
-        cells[a][b] &= elim;
-      }
+      cells[a][b] &= elim;
     }
   }
 }
