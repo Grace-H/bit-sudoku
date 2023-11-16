@@ -4,7 +4,7 @@
 # Kill all sudoku solvers and test scripts that may be running
 
 pkill "test"
-pkill "stack-solver"
-pkill "sudoku"
+pkill "ss"
+pkill "ts"
 pkill "ss-opt"
 ps -u $whoami

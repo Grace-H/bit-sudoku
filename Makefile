@@ -4,13 +4,13 @@ OFLAGS = -std=gnu99 -pg
 
 .PHONY: all clean
 
-all: sudoku stack-solver ss-opt
+all: ts ss ss-opt
 
-sudoku: sudoku.c util.o
-	$(CC) $(CFLAGS) -o sudoku sudoku.c util.o
+ts: ts.c util.o
+	$(CC) $(CFLAGS) -o ts ts.c util.o
 
-stack-solver: stack-solver.c util.o
-	$(CC) $(CFLAGS) -o stack-solver stack-solver.c util.o
+ss: ss.c util.o
+	$(CC) $(CFLAGS) -o ss ss.c util.o
 
 ss-opt: ss-opt.c util.o
 	$(CC) $(OFLAGS) -o ss-opt ss-opt.c util.o
@@ -20,4 +20,4 @@ util.o: util.c
 
 clean:
 	rm -f *.o
-	rm -f sudoku stack-solver ss-opt
+	rm -f ts ss ss-opt
