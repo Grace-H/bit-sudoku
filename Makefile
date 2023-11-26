@@ -4,13 +4,16 @@ OFLAGS = -std=gnu99 -pg
 
 .PHONY: all clean
 
-all: ts ss ss-opt
+all: ts ss ss-opt bt
 
 ts: ts.c util.o
 	$(CC) $(CFLAGS) -o ts ts.c util.o
 
 ss: ss.c util.o
 	$(CC) $(CFLAGS) -o ss ss.c util.o
+
+bt: bt.c util.o
+	$(CC) $(CFLAGS) -o bt bt.c util.o
 
 ss-opt: ss-opt.c util.o
 	$(CC) $(OFLAGS) -o ss-opt ss-opt.c util.o
