@@ -8,6 +8,7 @@
 
 #define HOUSE_SZ 9 // Cells in one house
 #define BLK_WIDTH 3 // Cells in intersection between houses & width of one block
+#define N_CELLS 81
 
 #define LOG(format, ...) fprintf(stderr, "%s(%d):\t" format "\n",       \
     __func__, __LINE__, ##__VA_ARGS__)

@@ -12,8 +12,6 @@
 
 #include "util.h"
 
-#define N_CELLS 81
-
 struct transform {
   int i; // Coordinates of cell transformed
   int j;
