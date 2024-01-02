@@ -62,14 +62,16 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
 					break;
 				}
 			}
-			cells[i][j] = 1;
-			delta = -1;
+			if (cells[i][j] >= max) {
+				cells[i][j] = 1;
+				delta = -1;
+			}
 		}
 		n += delta;
 	}
 
 	// Check if solved
-	uint16_t target = (1 << (HOUSE_SZ + 1)) - 1;
+	uint16_t target = max - 2;  // 1's in bits 1-9
 	uint16_t solved = target;
 	for (int i = 0; i < HOUSE_SZ; i++) {
 		solved &= row[i];
