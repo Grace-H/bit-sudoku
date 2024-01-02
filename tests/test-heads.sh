@@ -16,7 +16,7 @@ heads=( 1_2 1_5 1_7
 	8_0 8_1 8_2 8_3 8_4 8_5 8_6 8_7 8_8 8_9
 	9_0 9_1 9_2 9_3 ai)
 
-if [[ $# < 1 ]] ; then
+if [[ $# < 1 || ! -x $1 ]] ; then
     echo "Usage: test-heads.sh <solver>"
     exit 1
 fi
