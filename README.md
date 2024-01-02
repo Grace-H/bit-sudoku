@@ -40,3 +40,7 @@ and this bit is left-shifted as it is incremented and new values are tried.
 ## Thanks
 The majority of the test cases used in evaluating the solvers are from the [Sudoku Exchange Puzzle Bank](https://github.com/grantm/sudoku-exchange-puzzle-bank).
 Several of the testing scripts are specifically designed for parsing & testing using these puzzle files.
+
+The AI Sudoku Top 10 by Arto Inkala,
+a classic set of extremely difficult sudoku puzzles,
+ were found [here](http://www.aisudoku.com/en/AIsudoku_Top10s1_en.pdf).
