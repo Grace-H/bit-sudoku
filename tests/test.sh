@@ -13,7 +13,8 @@ function solve(){
 }
 
 verbose=false
-while getopts "hv" OPT; do
+JOBS_MAX=1
+while getopts "hvP:" OPT; do
     case $OPT in
         h)
             echo "Usage: test.sh [-hv] <solver> <test-dir>"
@@ -22,6 +23,9 @@ while getopts "hv" OPT; do
         v)
             verbose=true
             ;;
+	P)
+	    JOBS_MAX=$OPTARG
+	    ;;
     esac
 done
 shift $((OPTIND - 1))
@@ -38,16 +42,12 @@ logfile=tests/tmp/log_$level
 
 touch $logfile
 
-job_count=0
-JOBS_MAX=5
 for file in $2/*
 do
     ((total++))
-    ((job_count++))
-    if [[ $job_count -gt $JOBS_MAX ]] ; then
+    while [[ $(jobs -r | wc -l) -ge $JOBS_MAX ]] ; do
 	wait -n
-        ((job_count--))
-    fi
+    done
     solve $1 $file $logfile &
 done
 wait
