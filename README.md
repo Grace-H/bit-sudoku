@@ -32,7 +32,7 @@ Solves all puzzles and supports a batch mode.
 Current bottleneck is file operation system calls.
 
 ### Backtracking Algorithm
-A work-in-progress implementation in `bt.c` of the backtracking algorithm described [here](https://en.wikipedia.org/wiki/Sudoku_solving_algorithms#Backtracking).
+An implementation in `bt.c` of the backtracking algorithm described [here](https://en.wikipedia.org/wiki/Sudoku_solving_algorithms#Backtracking).
 In contrast to the other solvers, each cell in the grid will only ever have one bit set. 
 The initial state of each vector is 1 (0th bit),
 and this bit is left-shifted as it is incremented and new values are tried.
