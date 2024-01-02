@@ -26,7 +26,7 @@ while getopts "hv" OPT; do
 done
 shift $((OPTIND - 1))
 
-if [[ $# < 2 ]] || ! [[ -d $2 ]] ; then
+if [[ $# < 2 || ! -x $1 || ! -d $2 ]] ; then
     echo "Usage: test.sh [-hv] <solver> <test-dir>"
     exit 1
 fi
