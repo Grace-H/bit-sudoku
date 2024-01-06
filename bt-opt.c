@@ -13,6 +13,13 @@
 static inline int blk_index(int i, int j) {
   return (i / BLK_WIDTH) * BLK_WIDTH + j / BLK_WIDTH;
 }
+/**
+ * Get i,j coordinates of top left cell in a block from its index
+ */
+static void blk_coords(int n, int *i, int *j) {
+  *i = (n / BLK_WIDTH) * BLK_WIDTH;
+  *j = (n % BLK_WIDTH) * BLK_WIDTH;
+}
 
 /**
  * Apply a basic backtracking algorithm to solve.
@@ -130,6 +137,21 @@ int main(int argc, char **argv) {
 			if (d > 0 && d <= 9) {
 				cells[i][j] = 1 << d;
 				original[i] |= (1 << j);
+
+                                uint16_t elim = ~cells[i][j];
+                                for (int x = 0; x < HOUSE_SZ; x++) {
+                                        cells[i][x] &= elim;
+                                }
+                                for (int y = 0; y < HOUSE_SZ; y++) {
+                                        cells[y][j] &= elim;
+                                }
+                                int z1, z2;
+                                blk_coords(blk_index(i, j), &z1, &z2);
+                                for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+                                        for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+                                                cells[a][b] &= elim;
+                                        }
+                                }
 			} else if (d != 0) {
 				fprintf(stderr, "Invalid digit: %d\n", d);
 				fclose(f);
