@@ -153,6 +153,7 @@ int main(int argc, char **argv) {
   }
 
   for (int file = 1; file < argc; file++) {
+    int backtracks = 0;
     // Initialize bitvectors of cell possibilites
     uint16_t cells[HOUSE_SZ][HOUSE_SZ];
     uint16_t nine = (1 << HOUSE_SZ) - 1;
@@ -243,6 +244,7 @@ int main(int argc, char **argv) {
           }
 
           trans = stack_pop(&transforms);
+          backtracks++;
 
           if (!trans) {
             return 1;
@@ -270,6 +272,7 @@ int main(int argc, char **argv) {
     }
 
 
+    fprintf(stderr, "%d\n", backtracks);
     struct transform *trans = NULL;
     while ((trans = stack_pop(&transforms))) {
       free(trans->cells);
