@@ -221,8 +221,6 @@ int main(int argc, char **argv) {
 
     fclose(f);
 
-    singles(cells);
-
     // Initialize stack for tracking transformations
     struct stack transforms;
     stack_init(&transforms);
@@ -234,7 +232,10 @@ int main(int argc, char **argv) {
       // Perform transformation
       int i = n / HOUSE_SZ;
       int j = n % HOUSE_SZ;
-      while ((n < N_CELLS) && !(cells[i][j] & (cells[i][j] - 1))) {
+      while ((n < N_CELLS) && cells[i][j] && !(cells[i][j] & (cells[i][j] - 1))) {
+        if (cells[i][j]) {
+          remove_candidate(cells, i, j);
+        }
         n++;
         i = n / HOUSE_SZ;
         j = n % HOUSE_SZ;
