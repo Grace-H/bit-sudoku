@@ -47,18 +47,21 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   uint16_t elim = ~cells[i][j];
 
   for (int x = 0; x < HOUSE_SZ; x++) {
-    cells[i][x] &= elim;
+    if (x != j)
+      cells[i][x] &= elim;
   }
 
   for (int y = 0; y < HOUSE_SZ; y++) {
-    cells[y][j] &= elim;
+    if (y != i)
+      cells[y][j] &= elim;
   }
 
   int z1, z2;
   blk_coords(blk_index(i, j), &z1, &z2);
   for (int a = z1; a < z1 + BLK_WIDTH; a++) {
     for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-      cells[a][b] &= elim;
+      if (!(a == i && b == j))
+        cells[a][b] &= elim;
     }
   }
 }
