@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -g -Wall -std=gnu99 -fstack-protector-all
-OFLAGS = -std=gnu99
+OFLAGS = -std=gnu99 -pg
 
 .PHONY: all clean
 
