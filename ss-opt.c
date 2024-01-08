@@ -40,17 +40,6 @@ static inline int cell_index(int i, int j) {
   return i * HOUSE_SZ + j;
 }
 
-// Check if the board is valid - all cells have at least one candidate
-int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
-  for (int i = 0; i < HOUSE_SZ; i++) {
-    for (int j = 0; j < HOUSE_SZ; j++) {
-      if (!cells[i][j]) {
-        return 0;
-      }
-    }
-  }
-  return 1;
-}
 
 // Eliminate as candidate value of solved cell & propagate any other
 // solved cells process creates
@@ -72,6 +61,40 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
       cells[a][b] &= elim;
     }
   }
+}
+
+// Check if the board is valid - all cells have at least one candidate
+int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+	uint16_t max = 1 << HOUSE_SZ;
+	uint16_t row[HOUSE_SZ];
+	uint16_t col[HOUSE_SZ];
+	uint16_t blk[HOUSE_SZ];
+	for (int i = 0; i < HOUSE_SZ; i++) {
+		row[i] = 0;
+		col[i] = 0;
+		blk[i] = 0;
+	}
+
+	for (int i = 0; i < HOUSE_SZ; i++) {
+		for (int j = 0; j < HOUSE_SZ; j++) {
+			row[i] |= cells[i][j];
+			col[j] |= cells[i][j];
+			blk[blk_index(i, j)] |= cells[i][j];
+		}
+	}
+
+	uint16_t target = max - 1;  // 1's in bits 1-9
+	uint16_t solved = target;
+	for (int i = 0; i < HOUSE_SZ; i++) {
+		solved &= row[i];
+		solved &= col[i];
+		solved &= blk[i];
+	}
+
+	if (solved == target) {
+		return 1;
+	}
+	return 0;
 }
 
 // Hidden singles strategy
@@ -269,12 +292,15 @@ int main(int argc, char **argv) {
       remove_candidate(cells, trans->i, trans->j);
     }
 
-
     struct transform *trans = NULL;
     while ((trans = stack_pop(&transforms))) {
       free(trans->cells);
       free(trans);
     }
+
+    // Terminate early on failure
+    if (!is_valid(cells))
+      return 1;
   }
   return 0;
 }
