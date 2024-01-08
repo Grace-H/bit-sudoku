@@ -1,8 +1,15 @@
+/**
+ * bt.c - simple backtracking algorithm implementation, as described here:
+ * https://en.wikipedia.org/wiki/Sudoku_solving_algorithms
+ *
+ * @author: Grace-H
+ */
 #include <stdio.h>
 #include "util.h"
 
-// Get block number (0->9 reading left-right top-bottom) from i,j coordinates
-// Block index is i rounded down to nearest multiple of cell size + j divided by cell size
+/**
+ * Get block number (0->9 reading left-right top-bottom) from i,j coordinates
+ */
 static inline int blk_index(int i, int j) {
   return (i / BLK_WIDTH) * BLK_WIDTH + j / BLK_WIDTH;
 }
