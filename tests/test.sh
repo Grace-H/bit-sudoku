@@ -46,7 +46,7 @@ for file in $2/*
 do
     ((total++))
     while [[ $(jobs -r | wc -l) -ge $JOBS_MAX ]] ; do
-	wait -n
+	sleep .001
     done
     solve $1 $file $logfile &
 done
