@@ -1,7 +1,7 @@
 /**
- * stack-solver.c
+ * ss-opt.c
  *
- * Stack-based sudoku solver. Applies transformations to the sudoku grid until it
+ * Optimized stack-based sudoku solver. Applies transformations to the sudoku grid until it
  * becomes invalid, then reverts the previous change to attempt a different solution.
  */
 
