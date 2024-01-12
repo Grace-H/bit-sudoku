@@ -298,7 +298,7 @@ int main(int argc, char **argv) {
       remove_candidate(cells, trans->i, trans->j);
     }
 
-    fprintf(stderr, "%d\n", backtracks);
+    fprintf(stdout, "%d", backtracks);
 
     struct transform *trans = NULL;
     while ((trans = stack_pop(&transforms))) {

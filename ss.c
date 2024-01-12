@@ -263,7 +263,7 @@ int main(int argc, char **argv) {
   }
 
   if (is_solved(cells)) {
-    printf("Solved");
+    printf("%d", backtracks);
     return 0;
   }
   return 1;

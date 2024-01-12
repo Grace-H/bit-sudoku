@@ -101,7 +101,7 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ][HOUSE_
   if (solved != target) {
     return 1;
   }
-  fprintf(stderr, "%d\n", backtracks);
+  fprintf(stdout, "%d\n", backtracks);
 
   return 0;
 }
