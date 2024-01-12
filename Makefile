@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -g -Wall -std=gnu99 -fstack-protector-all
-OFLAGS = -std=gnu99 -pg
+OFLAGS = -std=gnu99
 
 .PHONY: all clean
 
@@ -26,4 +26,4 @@ util.o: util.c
 
 clean:
 	rm -f *.o
-	rm -f ts ss ss-opt
+	rm -f ts ss ss-opt bt bt-opt
