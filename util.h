@@ -45,6 +45,18 @@ void stack_push(struct stack *stack, void *datum);
 void *stack_pop(struct stack *stack);
 int stack_is_empty(struct stack *stack);
 
+// Queue
+struct queue {
+  struct node *head;
+};
+
+void queue_init(struct queue *queue);
+void queue_destroy(struct queue *queue);
+
+void queue_put(struct queue *queue, void *datum);
+void *queue_get(struct queue *queue);
+int queue_is_empty(struct queue *queue);
+
 // Priority Queue
 struct pq {
   struct pqnode *head;
