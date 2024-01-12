@@ -88,18 +88,20 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   uint16_t elim = ~cells[i][j];
 
   for (int x = 0; x < HOUSE_SZ; x++) {
-    if (cells[i][x] & (cells[i][x] - 1)) {
+    if (j != x && cells[i][x]) {
+      uint16_t old = cells[i][x];
       cells[i][x] &= elim;
-      if (!(cells[i][x] & (cells[i][x] - 1))) {
+      if ((old & (old - 1)) && !(cells[i][x] & (cells[i][x] - 1))) {
         remove_candidate(cells, i, x);
       }
     }
   }
 
   for (int y = 0; y < HOUSE_SZ; y++) {
-    if (cells[y][j] & (cells[y][j] - 1)) {
+    if (i != y && cells[y][j]) {
+      uint16_t old = cells[y][j];
       cells[y][j] &= elim;
-      if (!(cells[y][j] & (cells[y][j] - 1))) {
+      if ((old & (old - 1)) && !(cells[y][j] & (cells[y][j] - 1))) {
         remove_candidate(cells, y, j);
       }
     }
@@ -109,9 +111,10 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   blk_coords(blk_index(i, j), &z1, &z2);
   for (int a = z1; a < z1 + BLK_WIDTH; a++) {
     for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-      if (cells[a][b] & (cells[a][b] - 1)) {
+      if (!(a == i && b == j) && cells[a][b]) {
+        uint16_t old = cells[a][b];
         cells[a][b] &= elim;
-        if (!(cells[a][b] & (cells[a][b] - 1))) {
+        if ((old & (old - 1)) && !(cells[a][b] & (cells[a][b] - 1))) {
           remove_candidate(cells, a, b);
         }
       }
@@ -174,12 +177,14 @@ int main(int argc, char **argv) {
   struct stack transforms;
   stack_init(&transforms);
 
+  int backtracks = 0;
   int n = 0; // Current location in grid
   while (n < N_CELLS && !is_solved((const uint16_t(*)[HOUSE_SZ]) cells)) {
     struct transform *trans = NULL;
 
     // Perform transformation
     if (is_valid((const uint16_t(*)[HOUSE_SZ]) cells)) {
+      // All cells have at least one candidate
       // If valid, choose next unsolved cell
       int i = n / HOUSE_SZ;
       int j = n % HOUSE_SZ;
@@ -208,6 +213,7 @@ int main(int argc, char **argv) {
       trans->cells = malloc(HOUSE_SZ * HOUSE_SZ * sizeof(uint16_t));
       copy_cells(cells, trans->cells);
     } else {
+
       // Revert to first prior transformation on cell with untried candidates
       do {
         if (trans) {
@@ -221,6 +227,7 @@ int main(int argc, char **argv) {
           printf("Not solved\n");
           return 1;
         }
+        backtracks++;
       } while ((trans->candidates & ~trans->tried) == 0);
 
       n = trans->i * HOUSE_SZ + trans->j;
@@ -243,14 +250,23 @@ int main(int argc, char **argv) {
     remove_candidate(cells, trans->i, trans->j);
   }
 
-  printf("Solved");
+  /*
+  char cels_buf[100];
+  cells_str(cells, cels_buf, 100);
+  LOG("\n%s", cels_buf);
+  */
 
   struct transform *trans = NULL;
   while ((trans = stack_pop(&transforms))) {
     free(trans->cells);
     free(trans);
   }
-  return 0;
+
+  if (is_solved(cells)) {
+    printf("Solved");
+    return 0;
+  }
+  return 1;
 }
 
 /* vim:set ts=2 sw=2 et: */
