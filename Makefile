@@ -26,4 +26,4 @@ util.o: util.c
 
 clean:
 	rm -f *.o
-	rm -f ts ss ss-opt
+	rm -f ts ss ss-opt bt bt-opt
