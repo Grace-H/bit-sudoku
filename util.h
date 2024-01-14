@@ -66,8 +66,8 @@ void pq_init(struct pq *pq);
 void pq_destroy(struct pq *pq);
 
 void pq_insert(struct pq *pq, void *datum, int priority);
-void *pq_extract_max(struct pq *pq, void *datum);
-void *pq_change_key(struct pq *pq, void *datum, int priority);
-void *pq_is_empty(struct pq *pq);
+void *pq_extract_max(struct pq *pq);
+void pq_change_key(struct pq *pq, void *datum, int priority);
+int pq_is_empty(struct pq *pq);
 
 /* vim:set ts=2 sw=2 et: */
