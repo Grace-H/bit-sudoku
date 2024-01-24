@@ -1,5 +1,5 @@
 ACEUNIT_LOC = ../aceunit
-ACEUNIT_LIB = $(ACEUNIT_LOC)/lib/libaceunit_setjmp.a
+ACEUNIT_LIB = $(ACEUNIT_LOC)/lib/libaceunit-fork.a
 TEST_LOC = tests
 
 CC = gcc
@@ -31,15 +31,16 @@ util.o: util.c
 test_ds: test_pq
 	./$^
 
-test_pq: test_pq.o util.o testcases.o
+test_pq: util.o test_pq.o testcases.o
+	$(CC) util.o test_pq.o testcases.o $(ACEUNIT_LIB) -o test_pq
 
 testcases.c: test_pq.o
-	$(ACEUNIT_LOC)/bin/aceunit $^ >$@
+	$(ACEUNIT_LOC)/bin/aceunit test_pq.o >testcases.c
 
-test_pq.o: tests/test-pq.c
-test_pq.o:
-	mv tests/test-pq.o ./test_pq.o
+test_pq.o: tests/test_pq.c
+	$(CC) $(CFLAGS) -c tests/test_pq.c
 
 clean:
 	rm -f *.o
-	rm -f ts ss ss-opt
+	rm -f ts ss ss-opt bt bt-opt test_pq
+	rm testcases.c
