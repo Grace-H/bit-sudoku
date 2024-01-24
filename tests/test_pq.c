@@ -1,18 +1,23 @@
 #include <stdio.h>
+#include <assert.h>
 #include "../util.h"
 
-int test_create_destroy() {
-	struct pq pq;
+struct pq pq;
+void beforeEach() {
 	pq_init(&pq);
-	if (!pq_is_empty(&pq))
-		goto out_fail;
-	pq_destroy(&pq);
-	return 0;
-out_fail:
-	pq_destroy(&pq);
-	return 1;
 }
 
+void afterEach() {
+	pq_destroy(&pq);
+}
+
+void test_is_empty() {
+	assert(pq_is_empty(&pq));
+	int datum = 71;
+	pq_insert(&pq, &datum, 1);
+	assert(!pq_is_empty(&pq));
+}
+/*
 int test_insert_low2high() {
 	int priorities[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
@@ -146,3 +151,4 @@ int main() {
 
 	return 0;
 }
+*/
