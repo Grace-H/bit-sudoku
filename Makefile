@@ -19,7 +19,7 @@ bt-opt: bt-opt.c util.o
 	$(CC) $(CFLAGS) -o bt-opt bt-opt.c util.o
 
 ss-opt: ss-opt.c util.o
-	$(CC) $(OFLAGS) -o ss-opt ss-opt.c util.o
+	$(CC) $(CFLAGS) -o ss-opt ss-opt.c util.o
 
 util.o: util.c
 	$(CC) $(OFLAGS) -c util.c
