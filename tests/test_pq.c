@@ -92,3 +92,42 @@ void test_alternate() {
 		max = temp;
 	}
 }
+
+
+void test_increase_key() {
+	int data[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	int priorities[10] = {0, 1, 2, 3, 9, 5, 6, 7, 8, 9};
+
+	for (int i = 0; i < 10; i++) {
+		pq_insert(&pq, &data[i], priorities[i]);
+	}
+
+	pq_change_key(&pq, &data[4], 4);
+
+	int *max = NULL;
+	while (!pq_is_empty(&pq)) {
+		int *temp = pq_extract_max(&pq);
+		if (max)
+			assert(*temp <= *max);
+		max = temp;
+	}
+}
+
+void test_decrease_key() {
+	int data[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+	int priorities[10] = {0, 1, 2, 3, 0, 5, 6, 7, 8, 9};
+
+	for (int i = 0; i < 10; i++) {
+		pq_insert(&pq, &data[i], priorities[i]);
+	}
+
+	pq_change_key(&pq, &data[4], 4);
+
+	int *max = NULL;
+	while (!pq_is_empty(&pq)) {
+		int *temp = pq_extract_max(&pq);
+		if (max)
+			assert(*temp <= *max);
+		max = temp;
+	}
+}
