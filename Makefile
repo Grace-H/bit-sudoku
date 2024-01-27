@@ -6,7 +6,7 @@ ACEUNIT_LIB = $(ACEUNIT_LOC)/lib/libaceunit-fork.a
 TEST_LOC = tests
 VPATH = . $(TEST_LOC)
 
-TESTS = pq queue
+TESTS = pq queue stack
 TEST_BINS = $(addprefix test_,$(TESTS))
 TEST_OBJS = $(addsuffix .o,$(TEST_BINS))
 
