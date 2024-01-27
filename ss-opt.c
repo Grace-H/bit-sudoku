@@ -1,7 +1,7 @@
 /**
- * stack-solver.c
+ * ss-opt.c
  *
- * Stack-based sudoku solver. Applies transformations to the sudoku grid until it
+ * Optimized stack-based sudoku solver. Applies transformations to the sudoku grid until it
  * becomes invalid, then reverts the previous change to attempt a different solution.
  */
 
@@ -40,17 +40,6 @@ static inline int cell_index(int i, int j) {
   return i * HOUSE_SZ + j;
 }
 
-// Check if the board is valid - all cells have at least one candidate
-int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
-  for (int i = 0; i < HOUSE_SZ; i++) {
-    for (int j = 0; j < HOUSE_SZ; j++) {
-      if (!cells[i][j]) {
-        return 0;
-      }
-    }
-  }
-  return 1;
-}
 
 // Eliminate as candidate value of solved cell & propagate any other
 // solved cells process creates
@@ -58,20 +47,57 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   uint16_t elim = ~cells[i][j];
 
   for (int x = 0; x < HOUSE_SZ; x++) {
-    cells[i][x] &= elim;
+    if (x != j)
+      cells[i][x] &= elim;
   }
 
   for (int y = 0; y < HOUSE_SZ; y++) {
-    cells[y][j] &= elim;
+    if (y != i)
+      cells[y][j] &= elim;
   }
 
   int z1, z2;
   blk_coords(blk_index(i, j), &z1, &z2);
   for (int a = z1; a < z1 + BLK_WIDTH; a++) {
     for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-      cells[a][b] &= elim;
+      if (!(a == i && b == j))
+        cells[a][b] &= elim;
     }
   }
+}
+
+// Check if the board is valid - all cells have at least one candidate
+int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+	uint16_t max = 1 << HOUSE_SZ;
+	uint16_t row[HOUSE_SZ];
+	uint16_t col[HOUSE_SZ];
+	uint16_t blk[HOUSE_SZ];
+	for (int i = 0; i < HOUSE_SZ; i++) {
+		row[i] = 0;
+		col[i] = 0;
+		blk[i] = 0;
+	}
+
+	for (int i = 0; i < HOUSE_SZ; i++) {
+		for (int j = 0; j < HOUSE_SZ; j++) {
+			row[i] |= cells[i][j];
+			col[j] |= cells[i][j];
+			blk[blk_index(i, j)] |= cells[i][j];
+		}
+	}
+
+	uint16_t target = max - 1;  // 1's in bits 1-9
+	uint16_t solved = target;
+	for (int i = 0; i < HOUSE_SZ; i++) {
+		solved &= row[i];
+		solved &= col[i];
+		solved &= blk[i];
+	}
+
+	if (solved == target) {
+		return 1;
+	}
+	return 0;
 }
 
 // Hidden singles strategy
@@ -153,6 +179,7 @@ int main(int argc, char **argv) {
   }
 
   for (int file = 1; file < argc; file++) {
+    int backtracks = 0;
     // Initialize bitvectors of cell possibilites
     uint16_t cells[HOUSE_SZ][HOUSE_SZ];
     uint16_t nine = (1 << HOUSE_SZ) - 1;
@@ -195,8 +222,6 @@ int main(int argc, char **argv) {
 
     fclose(f);
 
-    singles(cells);
-
     // Initialize stack for tracking transformations
     struct stack transforms;
     stack_init(&transforms);
@@ -208,7 +233,10 @@ int main(int argc, char **argv) {
       // Perform transformation
       int i = n / HOUSE_SZ;
       int j = n % HOUSE_SZ;
-      while ((n < N_CELLS) && !(cells[i][j] & (cells[i][j] - 1))) {
+      while ((n < N_CELLS) && cells[i][j] && !(cells[i][j] & (cells[i][j] - 1))) {
+        if (cells[i][j]) {
+          remove_candidate(cells, i, j);
+        }
         n++;
         i = n / HOUSE_SZ;
         j = n % HOUSE_SZ;
@@ -243,6 +271,7 @@ int main(int argc, char **argv) {
           }
 
           trans = stack_pop(&transforms);
+          backtracks++;
 
           if (!trans) {
             return 1;
@@ -269,12 +298,17 @@ int main(int argc, char **argv) {
       remove_candidate(cells, trans->i, trans->j);
     }
 
+    fprintf(stderr, "%d\n", backtracks);
 
     struct transform *trans = NULL;
     while ((trans = stack_pop(&transforms))) {
       free(trans->cells);
       free(trans);
     }
+
+    // Terminate early on failure
+    if (!is_valid(cells))
+      return 1;
   }
   return 0;
 }
