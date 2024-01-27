@@ -35,8 +35,11 @@ $(TESTS): %: test_%
 $(TEST_BINS): test_%: test_%.o testcases_%.o util.o $(ACEUNIT_LIB)
 
 $(TESTCASES_SRCS): testcases_%.c: test_%.o
-	$(ACEUNIT_LOC)/bin/aceunit $^ >$@
+	$(ACEUNIT_LOC)/bin/aceunit.zsh -s _ $^ >$@
 
 clean:
 	$(RM) $(BINS) $(OBJS)
 	$(RM) $(TEST_BINS) $(TEST_OBJS) $(TESTCASES_SRCS) $(TESTCASES_OBJS)
+
+clobber: clean
+	$(RM) -r *.dSYM
