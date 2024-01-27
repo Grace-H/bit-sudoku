@@ -47,21 +47,36 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   uint16_t elim = ~cells[i][j];
 
   for (int x = 0; x < HOUSE_SZ; x++) {
-    if (x != j)
+    if (j != x && cells[i][x]) {
+      uint16_t old = cells[i][x];
       cells[i][x] &= elim;
+      if ((old & (old - 1)) && !(cells[i][x] & (cells[i][x] - 1))) {
+        remove_candidate(cells, i, x);
+      }
+    }
   }
 
   for (int y = 0; y < HOUSE_SZ; y++) {
-    if (y != i)
+    if (i != y && cells[y][j]) {
+      uint16_t old = cells[y][j];
       cells[y][j] &= elim;
+      if ((old & (old - 1)) && !(cells[y][j] & (cells[y][j] - 1))) {
+        remove_candidate(cells, y, j);
+      }
+    }
   }
 
   int z1, z2;
   blk_coords(blk_index(i, j), &z1, &z2);
   for (int a = z1; a < z1 + BLK_WIDTH; a++) {
     for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-      if (!(a == i && b == j))
+      if (!(a == i && b == j) && cells[a][b]) {
+        uint16_t old = cells[a][b];
         cells[a][b] &= elim;
+        if ((old & (old - 1)) && !(cells[a][b] & (cells[a][b] - 1))) {
+          remove_candidate(cells, a, b);
+        }
+      }
     }
   }
 }
