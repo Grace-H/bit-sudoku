@@ -3,26 +3,27 @@
 #include "../util.h"
 
 struct pq pq;
-void beforeEach() {
-	pq_init(&pq);
-}
 
-void afterEach() {
-	pq_destroy(&pq);
+// Function that gives priority of datum; in this case the int pointed to
+int priority(int *datum) {
+	return *datum;
 }
 
 void test_is_empty() {
+	pq_init(&pq, (int (*)(void *)) priority, 10);
 	assert(pq_is_empty(&pq));
 	int datum = 71;
-	pq_insert(&pq, &datum, 1);
+	pq_insert(&pq, &datum);
 	assert(!pq_is_empty(&pq));
+	pq_destroy(&pq);
 }
 
 void test_insert_low2high() {
+	pq_init(&pq, (int (*)(void *)) priority, 10);
 	int priorities[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
 	for (int i = 0; i < 10; i++) {
-		pq_insert(&pq, &priorities[i], priorities[i]);
+		pq_insert(&pq, &priorities[i]);
 	}
 
 	int *max = pq_extract_max(&pq);
@@ -31,13 +32,15 @@ void test_insert_low2high() {
 		assert(*temp <= *max);
 		max = temp;
 	}
+	pq_destroy(&pq);
 }
 
 void test_insert_high2low() {
+	pq_init(&pq, (int (*)(void *)) priority, 10);
 	int priorities[10] = {9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
 
 	for (int i = 0; i < 10; i++) {
-		pq_insert(&pq, &priorities[i], priorities[i]);
+		pq_insert(&pq, &priorities[i]);
 	}
 
 	int *max = pq_extract_max(&pq);
@@ -46,13 +49,15 @@ void test_insert_high2low() {
 		assert(*temp <= *max);
 		max = temp;
 	}
+	pq_destroy(&pq);
 }
 
 void test_extract_insert() {
+	pq_init(&pq, (int (*)(void *)) priority, 10);
 	int priorities[10] = {9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
 
 	for (int i = 0; i < 5; i++) {
-		pq_insert(&pq, &priorities[i], priorities[i]);
+		pq_insert(&pq, &priorities[i]);
 	}
 
 	while (!pq_is_empty(&pq)) {
@@ -60,7 +65,7 @@ void test_extract_insert() {
 	}
 
 	for (int i = 0; i < 10; i++) {
-		pq_insert(&pq, &priorities[i], priorities[i]);
+		pq_insert(&pq, &priorities[i]);
 	}
 		
 	int *max = pq_extract_max(&pq);
@@ -69,15 +74,16 @@ void test_extract_insert() {
 		assert(*temp <= *max);
 		max = temp;
 	}
-
+	pq_destroy(&pq);
 }
 
 void test_alternate() {
+	pq_init(&pq, (int (*)(void *)) priority, 10);
 	int priorities[10] = {9, 8, 7, 6, 5, 4, 3, 2, 1, 0};
 
 	int *max = NULL;
 	for (int i = 0; i < 10; i++) {
-		pq_insert(&pq, &priorities[i], priorities[i]);
+		pq_insert(&pq, &priorities[i]);
 		if (i % 3) {
 			int *temp = pq_extract_max(&pq);
 			if (max)
@@ -91,18 +97,20 @@ void test_alternate() {
 		assert(*temp <= *max);
 		max = temp;
 	}
+	pq_destroy(&pq);
 }
 
 
-void test_increase_key() {
-	int data[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+void test_decrease_key() {
+	pq_init(&pq, (int (*)(void *)) priority, 10);
 	int priorities[10] = {0, 1, 2, 3, 9, 5, 6, 7, 8, 9};
 
 	for (int i = 0; i < 10; i++) {
-		pq_insert(&pq, &data[i], priorities[i]);
+		pq_insert(&pq, &priorities[i]);
 	}
 
-	pq_change_key(&pq, &data[4], 4);
+	priorities[4] = 4;
+	pq_change_key(&pq, &priorities[4]);
 
 	int *max = NULL;
 	while (!pq_is_empty(&pq)) {
@@ -111,17 +119,18 @@ void test_increase_key() {
 			assert(*temp <= *max);
 		max = temp;
 	}
+	pq_destroy(&pq);
 }
 
-void test_decrease_key() {
-	int data[10] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+void test_increase_key() {
+	pq_init(&pq, (int (*)(void *)) priority, 10);
 	int priorities[10] = {0, 1, 2, 3, 0, 5, 6, 7, 8, 9};
 
 	for (int i = 0; i < 10; i++) {
-		pq_insert(&pq, &data[i], priorities[i]);
+		pq_insert(&pq, &priorities[i]);
 	}
 
-	pq_change_key(&pq, &data[4], 4);
+	pq_change_key(&pq, &priorities[4]);
 
 	int *max = NULL;
 	while (!pq_is_empty(&pq)) {
@@ -130,4 +139,5 @@ void test_decrease_key() {
 			assert(*temp <= *max);
 		max = temp;
 	}
+	pq_destroy(&pq);
 }
