@@ -1,29 +1,42 @@
 CC = gcc
 CFLAGS = -g -Wall -std=gnu99 -fstack-protector-all
-OFLAGS = -std=gnu99 -pg
 
-.PHONY: all clean
+ACEUNIT_LOC = ../aceunit
+ACEUNIT_LIB = $(ACEUNIT_LOC)/lib/libaceunit-fork.a
+TEST_LOC = tests
+VPATH = . $(TEST_LOC)
 
-all: ts ss ss-opt bt bt-opt
+TESTS = pq queue stack
+TEST_BINS = $(addprefix test_,$(TESTS))
+TEST_OBJS = $(addsuffix .o,$(TEST_BINS))
 
-ts: ts.c util.o
-	$(CC) $(CFLAGS) -o ts ts.c util.o
+TESTCASES = $(addprefix testcases_,$(TESTS))
+TESTCASES_SRCS = $(addsuffix .c,$(TESTCASES))
+TESTCASES_OBJS = $(addsuffix .o,$(TESTCASES))
 
-ss: ss.c util.o
-	$(CC) $(CFLAGS) -o ss ss.c util.o
+BINS = ts ss ss-opt bt bt-opt
+OBJS = util.o
 
-bt: bt.c util.o
-	$(CC) $(CFLAGS) -o bt bt.c util.o
+.PHONY: all clean test $(TESTS)
 
-bt-opt: bt-opt.c util.o
-	$(CC) $(CFLAGS) -o bt-opt bt-opt.c util.o
+all: $(BINS)
 
-ss-opt: ss-opt.c util.o
-	$(CC) $(OFLAGS) -o ss-opt ss-opt.c util.o
+test: $(TESTS)
 
-util.o: util.c
-	$(CC) $(OFLAGS) -c util.c
+$(OBJS): %.o: %.h
+
+$(BINS): util.o
+
+$(TESTS): CFLAGS += -I $(ACEUNIT_LOC)/include
+$(TESTS): %: test_%
+	@echo === $@ ===
+	@./$^
+
+$(TEST_BINS): test_%: test_%.o testcases_%.o util.o $(ACEUNIT_LIB)
+
+$(TESTCASES_SRCS): testcases_%.c: test_%.o
+	$(ACEUNIT_LOC)/bin/aceunit $^ >$@
 
 clean:
-	rm -f *.o
-	rm -f ts ss ss-opt
+	$(RM) $(BINS) $(OBJS)
+	$(RM) $(TEST_BINS) $(TEST_OBJS) $(TESTCASES_SRCS) $(TESTCASES_OBJS)
