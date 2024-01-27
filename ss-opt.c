@@ -5,6 +5,7 @@
  * becomes invalid, then reverts the previous change to attempt a different solution.
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -13,6 +14,12 @@
 #include "util.h"
 
 #define N_CELLS 81
+
+struct cell {
+  int i;
+  int j;
+  int priority;  // 9 - Initial number of candidates
+};
 
 struct transform {
   int i; // Coordinates of cell transformed
@@ -237,27 +244,46 @@ int main(int argc, char **argv) {
 
     fclose(f);
 
+    // Construct priority queue--worklist for cells
+    // Cells with fewer candidates are higher priority
+    struct cell priorities[HOUSE_SZ][HOUSE_SZ];
+    int priority(struct cell *cell) {
+      return cell->priority;
+    }
+
+    struct pq worklist;
+    pq_init(&worklist, (int (*)(void *)) priority, N_CELLS);
+    for (int i = 0; i < HOUSE_SZ; i++) {
+      for (int j = 0; j < HOUSE_SZ; j++) {
+        priorities[i][j].i = i;
+        priorities[i][j].j = j;
+        priorities[i][j].priority = bit_count(cells[i][j]);
+        if (priorities[i][j].priority > 1)
+          pq_insert(&worklist, &priorities[i][j]);
+      }
+    }
+
     // Initialize stack for tracking transformations
     struct stack transforms;
     stack_init(&transforms);
 
-    int n = 0; // Current location in grid
-    while (n < N_CELLS) {
+    while (!pq_is_empty(&worklist)) {
       struct transform *trans = NULL;
 
       // Perform transformation
-      int i = n / HOUSE_SZ;
-      int j = n % HOUSE_SZ;
-      while ((n < N_CELLS) && cells[i][j] && !(cells[i][j] & (cells[i][j] - 1))) {
+      struct cell *cell = pq_extract_max(&worklist);
+      int i = cell->i;
+      int j = cell->j;
+      while (!pq_is_empty(&worklist) && cells[i][j] && !(cells[i][j] & (cells[i][j] - 1))) {
         if (cells[i][j]) {
           remove_candidate(cells, i, j);
         }
-        n++;
-        i = n / HOUSE_SZ;
-        j = n % HOUSE_SZ;
+        cell = pq_extract_max(&worklist);
+        i = cell->i;
+        j = cell->j;
       }
 
-      if (n == N_CELLS) {
+      if (pq_is_empty(&worklist)) {
         break;
       }
 
@@ -286,6 +312,7 @@ int main(int argc, char **argv) {
           }
 
           trans = stack_pop(&transforms);
+          pq_insert(&worklist, &priorities[trans->i][trans->j]);
           backtracks++;
 
           if (!trans) {
@@ -293,7 +320,8 @@ int main(int argc, char **argv) {
           }
         } while ((trans->candidates & ~trans->tried) == 0);
 
-        n = trans->i * HOUSE_SZ + trans->j;
+        //assert(((struct cell *) pq_extract_max(&worklist))->i == trans->i);
+        // n = trans->i * HOUSE_SZ + trans->j;
 
         copy_cells(trans->cells, cells);
 
@@ -313,7 +341,7 @@ int main(int argc, char **argv) {
       remove_candidate(cells, trans->i, trans->j);
     }
 
-    fprintf(stderr, "%d\n", backtracks);
+    fprintf(stdout, "%d", backtracks);
 
     struct transform *trans = NULL;
     while ((trans = stack_pop(&transforms))) {
