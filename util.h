@@ -42,6 +42,7 @@ int stack_is_empty(struct stack *stack);
 // Queue
 struct queue {
   struct node *head;
+  struct node *tail;
 };
 
 void queue_init(struct queue *queue);

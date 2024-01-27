@@ -105,6 +105,49 @@ int stack_is_empty(struct stack *stack) {
 	return stack->head == NULL;
 }
 
+void queue_init(struct queue *queue) {
+  queue->head = NULL;
+  queue->tail = NULL;
+}
+void queue_destroy(struct queue *queue) {
+  while(queue->head) {
+    struct node *node = queue->head;
+    queue->head = node->next;
+    free(node);
+  }
+  queue->tail = NULL;
+}
+
+void queue_put(struct queue *queue, void *datum) {
+  struct node *node = malloc(sizeof(struct node));
+  node->datum = datum;
+  node->next = NULL;
+
+  if (queue->head)
+    queue->tail->next = node;
+  else
+    queue->head = node;
+
+  queue->tail = node;
+}
+
+void *queue_get(struct queue *queue) {
+  if (!queue->head)
+    return NULL;
+
+  struct node *node = queue->head;
+  queue->head = node->next;
+  if (!queue->head)
+    queue->tail = NULL;
+  void *datum = node->datum;
+  free(node);
+  return datum;
+}
+
+int queue_is_empty(struct queue *queue) {
+  return queue->head == NULL;
+}
+
 void pq_init(struct pq *pq, int (*priority)(void *), int size) {
   pq->priority = priority;
   pq->size = 0;
