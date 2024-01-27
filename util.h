@@ -27,12 +27,6 @@ struct node {
 	void *datum;
 };
 
-struct binode {
-  struct binode *left;
-  struct binode *right;
-  void *datum;
-};
-
 // Stack
 struct stack {
 	struct node *head;
@@ -59,15 +53,18 @@ int queue_is_empty(struct queue *queue);
 
 // Priority Queue
 struct pq {
-  struct pqnode *head;
+  int (*priority)(void *);
+  void **array;
+  int size;
+  int array_n;
 };
 
-void pq_init(struct pq *pq);
+void pq_init(struct pq *pq, int (*priority)(void *), int size);
 void pq_destroy(struct pq *pq);
 
-void pq_insert(struct pq *pq, void *datum, int priority);
+int pq_insert(struct pq *pq, void *datum);
 void *pq_extract_max(struct pq *pq);
-void pq_change_key(struct pq *pq, void *datum, int priority);
+void pq_change_key(struct pq *pq, void *datum);
 int pq_is_empty(struct pq *pq);
 
 /* vim:set ts=2 sw=2 et: */
