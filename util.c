@@ -105,22 +105,96 @@ int stack_is_empty(struct stack *stack) {
 	return stack->head == NULL;
 }
 
-void pq_init(struct pq *pq) {
+void pq_init(struct pq *pq, int (*priority)(void *), int size) {
+  pq->priority = priority;
+  pq->size = 0;
+  pq->array = malloc(sizeof(void *) * size);
+  pq->array_n = size;
 }
 
 void pq_destroy(struct pq *pq) {
+  free(pq->array);
+  pq->array = NULL;
+  pq->priority = NULL;
+  pq->size = 0;
+  pq->array_n = 0;
 }
 
-void pq_insert(struct pq *pq, void *datum, int priority) {
+static void pq_change_key_at(struct pq *pq, int i) {
+  if (i != 0 && pq->priority(pq->array[i]) > pq->priority(pq->array[(i - 1) / 2])) {
+    // Larger than parent (increase key)
+    while (pq->priority(pq->array[i]) > pq->priority(pq->array[(i - 1) / 2])) {
+      void *temp = pq->array[i];
+      pq->array[i] = pq->array[(i - 1) / 2];
+      pq->array[(i - 1) / 2] = temp;
+      i = (i - 1) / 2;
+    }
+  } else {
+    // Smaller than child (decrease key)
+    while (i * 2 + 1 < pq->size) {
+      int lchild = pq->priority(pq->array[i * 2 + 1]);
+      int rchild = i * 2 + 2 < pq->size ? pq->priority(pq->array[i * 2 + 2]) : i;
+      int self = pq->priority(pq->array[i]);
+      int to_swap = i;
+
+      if (self < lchild) {
+        if (self < rchild && rchild > lchild) {
+          to_swap = i * 2 + 2;
+        } else {
+          to_swap = i * 2 + 1;
+        }
+      } else if (self < rchild) {
+        to_swap = i * 2 + 2;
+      }
+
+      if (to_swap == i)
+        break;
+
+      void *temp = pq->array[i];
+      pq->array[i] = pq->array[to_swap];
+      pq->array[to_swap] = temp;
+      i = to_swap;
+    }
+  }
+}
+
+int pq_insert(struct pq *pq, void *datum) {
+  if (pq->size == pq->array_n)
+    return 1;
+
+  int i = pq->size;
+  pq->array[i] = datum;
+
+  pq->size++;
+  pq_change_key_at(pq, i);
+
+  return 0;
 }
 
 void *pq_extract_max(struct pq *pq) {
+  void *to_return = pq->array[0];
+  pq->array[0] = pq->array[pq->size - 1];
+  pq->size--;
+  pq_change_key_at(pq, 0);
+  return to_return;
 }
 
-void pq_change_key(struct pq *pq, void *datum, int priority) {
+
+void pq_change_key(struct pq *pq, void *datum) {
+  int i = 0;
+  for (; i < pq->size; i++) {
+    if (pq->array[i] == datum)
+      break;
+  }
+
+  if (i == pq->size)
+    return;
+
+  pq_change_key_at(pq, i);
 }
 
 int pq_is_empty(struct pq *pq) {
+  return pq->size == 0;
 }
 
 /* vim:set ts=2 sw=2 et: */
