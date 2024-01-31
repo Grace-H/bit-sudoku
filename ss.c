@@ -179,25 +179,26 @@ int main(int argc, char **argv) {
 
   int backtracks = 0;
   int n = 0; // Current location in grid
-  while (n < N_CELLS && !is_solved((const uint16_t(*)[HOUSE_SZ]) cells)) {
+  while (n < N_CELLS) {
     struct transform *trans = NULL;
 
     // Perform transformation
-    if (is_valid((const uint16_t(*)[HOUSE_SZ]) cells)) {
-      // All cells have at least one candidate
-      // If valid, choose next unsolved cell
-      int i = n / HOUSE_SZ;
-      int j = n % HOUSE_SZ;
-      while ((n < N_CELLS) && !(cells[i][j] & (cells[i][j] - 1))) {
-        n++;
-        i = n / HOUSE_SZ;
-        j = n % HOUSE_SZ;
+    int i = n / HOUSE_SZ;
+    int j = n % HOUSE_SZ;
+    while ((n < N_CELLS) && cells[i][j] && !(cells[i][j] & (cells[i][j] - 1))) {
+      if (cells[i][j]) {
+        remove_candidate(cells, i, j);
       }
+      n++;
+      i = n / HOUSE_SZ;
+      j = n % HOUSE_SZ;
+    }
 
-      if (n == N_CELLS) {
-        break;
-      }
+    if (n == N_CELLS) {
+      break;
+    }
 
+    if (cells[i][j]) {
       // Construct transformation
       uint16_t solution = 1;
       while (!(cells[i][j] & solution)) {
@@ -213,7 +214,6 @@ int main(int argc, char **argv) {
       trans->cells = malloc(HOUSE_SZ * HOUSE_SZ * sizeof(uint16_t));
       copy_cells(cells, trans->cells);
     } else {
-
       // Revert to first prior transformation on cell with untried candidates
       do {
         if (trans) {
@@ -251,10 +251,10 @@ int main(int argc, char **argv) {
   }
 
   /*
-  char cels_buf[100];
-  cells_str(cells, cels_buf, 100);
-  LOG("\n%s", cels_buf);
-  */
+     char cels_buf[100];
+     cells_str(cells, cels_buf, 100);
+     LOG("\n%s", cels_buf);
+     */
 
   struct transform *trans = NULL;
   while ((trans = stack_pop(&transforms))) {
@@ -262,11 +262,10 @@ int main(int argc, char **argv) {
     free(trans);
   }
 
-  if (is_solved(cells)) {
-    printf("Solved");
-    return 0;
+  if (!is_solved(cells)) {
+    return 1;
   }
-  return 1;
+  return 0;
 }
 
 /* vim:set ts=2 sw=2 et: */
