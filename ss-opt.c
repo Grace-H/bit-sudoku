@@ -5,6 +5,7 @@
  * becomes invalid, then reverts the previous change to attempt a different solution.
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -13,6 +14,12 @@
 #include "util.h"
 
 #define N_CELLS 81
+
+struct cell {
+  int i;
+  int j;
+  int priority;  // 9 - Initial number of candidates
+};
 
 struct transform {
   int i; // Coordinates of cell transformed
@@ -47,21 +54,36 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   uint16_t elim = ~cells[i][j];
 
   for (int x = 0; x < HOUSE_SZ; x++) {
-    if (x != j)
+    if (j != x && cells[i][x]) {
+      uint16_t old = cells[i][x];
       cells[i][x] &= elim;
+      if ((old & (old - 1)) && !(cells[i][x] & (cells[i][x] - 1))) {
+        remove_candidate(cells, i, x);
+      }
+    }
   }
 
   for (int y = 0; y < HOUSE_SZ; y++) {
-    if (y != i)
+    if (i != y && cells[y][j]) {
+      uint16_t old = cells[y][j];
       cells[y][j] &= elim;
+      if ((old & (old - 1)) && !(cells[y][j] & (cells[y][j] - 1))) {
+        remove_candidate(cells, y, j);
+      }
+    }
   }
 
   int z1, z2;
   blk_coords(blk_index(i, j), &z1, &z2);
   for (int a = z1; a < z1 + BLK_WIDTH; a++) {
     for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-      if (!(a == i && b == j))
+      if (!(a == i && b == j) && cells[a][b]) {
+        uint16_t old = cells[a][b];
         cells[a][b] &= elim;
+        if ((old & (old - 1)) && !(cells[a][b] & (cells[a][b] - 1))) {
+          remove_candidate(cells, a, b);
+        }
+      }
     }
   }
 }
@@ -222,30 +244,39 @@ int main(int argc, char **argv) {
 
     fclose(f);
 
+    // Construct priority queue--worklist for cells
+    // Cells with fewer candidates are higher priority
+    struct cell priorities[HOUSE_SZ][HOUSE_SZ];
+    int priority(struct cell *cell) {
+      return cell->priority;
+    }
+
+    struct pq worklist;
+    pq_init(&worklist, (int (*)(void *)) priority, N_CELLS);
+    for (int i = 0; i < HOUSE_SZ; i++) {
+      for (int j = 0; j < HOUSE_SZ; j++) {
+        priorities[i][j].i = i;
+        priorities[i][j].j = j;
+        priorities[i][j].priority = bit_count(cells[i][j]);
+        if (priorities[i][j].priority > 1)
+          pq_insert(&worklist, &priorities[i][j]);
+      }
+    }
+
     // Initialize stack for tracking transformations
     struct stack transforms;
     stack_init(&transforms);
 
-    int n = 0; // Current location in grid
-    while (n < N_CELLS) {
+    // Get next cell in worklist
+    while (!pq_is_empty(&worklist)) {
       struct transform *trans = NULL;
 
       // Perform transformation
-      int i = n / HOUSE_SZ;
-      int j = n % HOUSE_SZ;
-      while ((n < N_CELLS) && cells[i][j] && !(cells[i][j] & (cells[i][j] - 1))) {
-        if (cells[i][j]) {
-          remove_candidate(cells, i, j);
-        }
-        n++;
-        i = n / HOUSE_SZ;
-        j = n % HOUSE_SZ;
-      }
+      struct cell *cell = pq_extract_max(&worklist);
+      int i = cell->i;
+      int j = cell->j;
 
-      if (n == N_CELLS) {
-        break;
-      }
-
+      // If it has remaining candidates
       if (cells[i][j]) {
 
         // Construct transformation
@@ -263,9 +294,12 @@ int main(int argc, char **argv) {
         trans->cells = malloc(HOUSE_SZ * HOUSE_SZ * sizeof(uint16_t));
         copy_cells(cells, trans->cells);
       } else {
+        pq_insert(&worklist, &priorities[i][j]);
+
         // Revert to first prior transformation on cell with untried candidates
         do {
           if (trans) {
+            pq_insert(&worklist, &priorities[trans->i][trans->j]);
             free(trans->cells);
             free(trans);
           }
@@ -278,7 +312,8 @@ int main(int argc, char **argv) {
           }
         } while ((trans->candidates & ~trans->tried) == 0);
 
-        n = trans->i * HOUSE_SZ + trans->j;
+        //assert(((struct cell *) pq_extract_max(&worklist))->i == trans->i);
+        // n = trans->i * HOUSE_SZ + trans->j;
 
         copy_cells(trans->cells, cells);
 
