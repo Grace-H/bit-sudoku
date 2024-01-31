@@ -189,6 +189,12 @@ int main(int argc, char **argv) {
       int i = n / HOUSE_SZ;
       int j = n % HOUSE_SZ;
       while ((n < N_CELLS) && !(cells[i][j] & (cells[i][j] - 1))) {
+        trans = malloc(sizeof(struct transform));
+        trans->i = i;
+        trans->j = j;
+        trans->solution = trans->candidates = trans->tried = cells[i][j];
+        trans->cells = NULL;
+        stack_push(&transforms, trans);
         n++;
         i = n / HOUSE_SZ;
         j = n % HOUSE_SZ;
@@ -213,6 +219,7 @@ int main(int argc, char **argv) {
       trans->cells = malloc(HOUSE_SZ * HOUSE_SZ * sizeof(uint16_t));
       copy_cells(cells, trans->cells);
     } else {
+      trans = NULL;
 
       // Revert to first prior transformation on cell with untried candidates
       do {
@@ -258,7 +265,8 @@ int main(int argc, char **argv) {
 
   struct transform *trans = NULL;
   while ((trans = stack_pop(&transforms))) {
-    free(trans->cells);
+    if (trans->cells)
+      free(trans->cells);
     free(trans);
   }
 
