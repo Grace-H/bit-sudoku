@@ -267,6 +267,7 @@ int main(int argc, char **argv) {
     struct stack transforms;
     stack_init(&transforms);
 
+    // Get next cell in worklist
     while (!pq_is_empty(&worklist)) {
       struct transform *trans = NULL;
 
@@ -274,19 +275,8 @@ int main(int argc, char **argv) {
       struct cell *cell = pq_extract_max(&worklist);
       int i = cell->i;
       int j = cell->j;
-      while (!pq_is_empty(&worklist) && cells[i][j] && !(cells[i][j] & (cells[i][j] - 1))) {
-        if (cells[i][j]) {
-          remove_candidate(cells, i, j);
-        }
-        cell = pq_extract_max(&worklist);
-        i = cell->i;
-        j = cell->j;
-      }
 
-      if (pq_is_empty(&worklist)) {
-        break;
-      }
-
+      // If it has remaining candidates
       if (cells[i][j]) {
 
         // Construct transformation
@@ -304,15 +294,17 @@ int main(int argc, char **argv) {
         trans->cells = malloc(HOUSE_SZ * HOUSE_SZ * sizeof(uint16_t));
         copy_cells(cells, trans->cells);
       } else {
+        pq_insert(&worklist, &priorities[i][j]);
+
         // Revert to first prior transformation on cell with untried candidates
         do {
           if (trans) {
+            pq_insert(&worklist, &priorities[trans->i][trans->j]);
             free(trans->cells);
             free(trans);
           }
 
           trans = stack_pop(&transforms);
-          pq_insert(&worklist, &priorities[trans->i][trans->j]);
           backtracks++;
 
           if (!trans) {
