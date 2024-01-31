@@ -88,8 +88,8 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   }
 }
 
-// Check if the board is valid - all cells have at least one candidate
-int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+// Check if board is solved - each house has one instance of each number
+int is_solved(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
 	uint16_t max = 1 << HOUSE_SZ;
 	uint16_t row[HOUSE_SZ];
 	uint16_t col[HOUSE_SZ];
@@ -342,7 +342,7 @@ int main(int argc, char **argv) {
     }
 
     // Terminate early on failure
-    if (!is_valid(cells))
+    if (!is_solved(cells))
       return 1;
   }
   return 0;
