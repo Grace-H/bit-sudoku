@@ -257,7 +257,7 @@ int main(int argc, char **argv) {
       for (int j = 0; j < HOUSE_SZ; j++) {
         priorities[i][j].i = i;
         priorities[i][j].j = j;
-        priorities[i][j].priority = bit_count(cells[i][j]);
+        priorities[i][j].priority = 9 - bit_count(cells[i][j]);
         if (priorities[i][j].priority > 1)
           pq_insert(&worklist, &priorities[i][j]);
       }
