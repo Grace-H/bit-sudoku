@@ -125,145 +125,146 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
 
 int main(int argc, char **argv) {
 
-  if (argc != 2) {
-    fprintf(stderr, "Usage: %s <puzzle file>\n", argv[0]);
+  if (argc < 2) {
+    fprintf(stderr, "Usage: %s <puzzle file> ...\n", argv[0]);
     return 1;
   }
 
-  // Initialize bitvectors of cell possibilites
-  uint16_t cells[HOUSE_SZ][HOUSE_SZ];
-  uint16_t nine = (1 << HOUSE_SZ) - 1;
-  for (int i = 0; i < HOUSE_SZ; i++) {
-    for (int j = 0; j < HOUSE_SZ; j++) {
-      cells[i][j] = nine;
+  for (int file = 1; file < argc; file++) {
+    int backtracks = 0;
+    // Initialize bitvectors of cell possibilites
+    uint16_t cells[HOUSE_SZ][HOUSE_SZ];
+    uint16_t nine = (1 << HOUSE_SZ) - 1;
+    for (int i = 0; i < HOUSE_SZ; i++) {
+      for (int j = 0; j < HOUSE_SZ; j++) {
+        cells[i][j] = nine;
+      }
     }
-  }
 
-  // Read & parse puzzle from file
-  FILE *f = fopen(argv[1], "r");
-  if (!f) {
-    perror("open");
-    return 1;
-  }
-
-  char buf[HOUSE_SZ];
-  for (int i = 0; i < HOUSE_SZ; i++) {
-    int ret = fscanf(f, "%9c\n", buf);
-    if (ret < 1) {
-      perror("fscanf");
-      fclose(f);
+    // Read & parse puzzle from file
+    FILE *f = fopen(argv[file], "r");
+    if (!f) {
+      perror("open");
       return 1;
     }
 
-    for (int j = 0; j < HOUSE_SZ; j++) {
-      if (buf[j] != '0') {
-        char d = buf[j];
-        if (d >= '1' && d <= '9') {
-          cells[i][j] = 1 << (d - '1');
+    char buf[HOUSE_SZ];
+    for (int i = 0; i < HOUSE_SZ; i++) {
+      int ret = fscanf(f, "%9c\n", buf);
+      if (ret < 1) {
+        perror("fscanf");
+        fclose(f);
+        return 1;
+      }
+
+      for (int j = 0; j < HOUSE_SZ; j++) {
+        if (buf[j] != '0') {
+          char d = buf[j];
+          if (d >= '1' && d <= '9') {
+            cells[i][j] = 1 << (d - '1');
+            remove_candidate(cells, i, j);
+          } else {
+            fprintf(stderr, "Invalid digit: %d\n", d);
+            fclose(f);
+            return 1;
+          }
+        }
+      }
+    }
+
+    fclose(f);
+
+
+    // Initialize stack for tracking transformations
+    struct stack transforms;
+    stack_init(&transforms);
+
+    int n = 0; // Current location in grid
+    while (n < N_CELLS) {
+      struct transform *trans = NULL;
+
+      // Perform transformation
+      int i = n / HOUSE_SZ;
+      int j = n % HOUSE_SZ;
+      while ((n < N_CELLS) && cells[i][j] && !(cells[i][j] & (cells[i][j] - 1))) {
+        if (cells[i][j]) {
           remove_candidate(cells, i, j);
-        } else {
-          fprintf(stderr, "Invalid digit: %d\n", d);
-          fclose(f);
-          return 1;
         }
+        n++;
+        i = n / HOUSE_SZ;
+        j = n % HOUSE_SZ;
       }
-    }
-  }
 
-  fclose(f);
+      if (n == N_CELLS) {
+        break;
+      }
 
-
-  // Initialize stack for tracking transformations
-  struct stack transforms;
-  stack_init(&transforms);
-
-  int backtracks = 0;
-  int n = 0; // Current location in grid
-  while (n < N_CELLS) {
-    struct transform *trans = NULL;
-
-    // Perform transformation
-    int i = n / HOUSE_SZ;
-    int j = n % HOUSE_SZ;
-    while ((n < N_CELLS) && cells[i][j] && !(cells[i][j] & (cells[i][j] - 1))) {
       if (cells[i][j]) {
-        remove_candidate(cells, i, j);
-      }
-      n++;
-      i = n / HOUSE_SZ;
-      j = n % HOUSE_SZ;
-    }
-
-    if (n == N_CELLS) {
-      break;
-    }
-
-    if (cells[i][j]) {
-      // Construct transformation
-      uint16_t solution = 1;
-      while (!(cells[i][j] & solution)) {
-        solution <<= 1;
-      }
-
-      trans = malloc(sizeof(struct transform));
-      trans->i = i;
-      trans->j = j;
-      trans->solution = solution;
-      trans->candidates = cells[i][j];
-      trans->tried = solution;
-      trans->cells = malloc(HOUSE_SZ * HOUSE_SZ * sizeof(uint16_t));
-      copy_cells(cells, trans->cells);
-    } else {
-      // Revert to first prior transformation on cell with untried candidates
-      do {
-        if (trans) {
-          free(trans->cells);
-          free(trans);
+        // Construct transformation
+        uint16_t solution = 1;
+        while (!(cells[i][j] & solution)) {
+          solution <<= 1;
         }
 
-        trans = stack_pop(&transforms);
+        trans = malloc(sizeof(struct transform));
+        trans->i = i;
+        trans->j = j;
+        trans->solution = solution;
+        trans->candidates = cells[i][j];
+        trans->tried = solution;
+        trans->cells = malloc(HOUSE_SZ * HOUSE_SZ * sizeof(uint16_t));
+        copy_cells(cells, trans->cells);
+      } else {
+        // Revert to first prior transformation on cell with untried candidates
+        do {
+          if (trans) {
+            free(trans->cells);
+            free(trans);
+          }
 
-        if (!trans) {
-          printf("Not solved\n");
-          return 1;
+          trans = stack_pop(&transforms);
+
+          if (!trans) {
+            return 1;
+          }
+          backtracks++;
+        } while ((trans->candidates & ~trans->tried) == 0);
+
+        n = trans->i * HOUSE_SZ + trans->j;
+
+        copy_cells(trans->cells, cells);
+
+        // Construct transformation
+        uint16_t solution = 1;
+        uint16_t remaining = trans->candidates ^ trans->tried;
+        while (!(remaining & solution)) {
+          solution <<= 1;
         }
-        backtracks++;
-      } while ((trans->candidates & ~trans->tried) == 0);
 
-      n = trans->i * HOUSE_SZ + trans->j;
-
-      copy_cells(trans->cells, cells);
-
-      // Construct transformation
-      uint16_t solution = 1;
-      uint16_t remaining = trans->candidates ^ trans->tried;
-      while (!(remaining & solution)) {
-        solution <<= 1;
+        trans->solution = solution;
+        trans->tried |= solution;
       }
 
-      trans->solution = solution;
-      trans->tried |= solution;
+      stack_push(&transforms, trans);
+      cells[trans->i][trans->j] = trans->solution;
+      remove_candidate(cells, trans->i, trans->j);
     }
 
-    stack_push(&transforms, trans);
-    cells[trans->i][trans->j] = trans->solution;
-    remove_candidate(cells, trans->i, trans->j);
-  }
+    /*
+       char cels_buf[100];
+       cells_str(cells, cels_buf, 100);
+       LOG("\n%s", cels_buf);
+       */
 
-  /*
-     char cels_buf[100];
-     cells_str(cells, cels_buf, 100);
-     LOG("\n%s", cels_buf);
-     */
+    struct transform *trans = NULL;
+    while ((trans = stack_pop(&transforms))) {
+      free(trans->cells);
+      free(trans);
+    }
 
-  struct transform *trans = NULL;
-  while ((trans = stack_pop(&transforms))) {
-    free(trans->cells);
-    free(trans);
-  }
-
-  if (!is_solved(cells)) {
-    return 1;
+    // Terminate early on failure
+    if (!is_solved(cells))
+      return 1;
   }
   return 0;
 }
