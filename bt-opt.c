@@ -7,11 +7,17 @@
 #include <stdio.h>
 #include "util.h"
 
+// Represents a cell with a priority based on initial candidate count
 struct cell {
   int i;
   int j;
   int priority;
 };
+
+/** Priority function for use with priority queue */
+int priority(struct cell *cell) {
+  return cell->priority;
+}
 
 /**
  * Get block number (0->9 reading left-right top-bottom) from i,j coordinates
@@ -105,10 +111,6 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
     }
   }
 
-  int priority(struct cell *cell) {
-    return cell->priority;
-  }
-
   struct pq pq;
   pq_init(&pq, (int (*)(void *)) priority, N_CELLS);
 
@@ -117,7 +119,7 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
     for (int j = 0; j < HOUSE_SZ; j++) {
       priorities[i][j].i = i;
       priorities[i][j].j = j;
-      priorities[i][j].priority = bit_count(candidates[i][j]);
+      priorities[i][j].priority = 9 - bit_count(candidates[i][j]);
       if (priorities[i][j].priority > 1)
         pq_insert(&pq, &priorities[i][j]);
     }
