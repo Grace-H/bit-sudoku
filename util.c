@@ -11,10 +11,10 @@
 
 #include "util.h"
 
-// Count number of set bits in vector of length HOUSE_SZ
+// Count number of set bits in vector of size uint16_t (unsigned short)
 int bit_count(const uint16_t n) {
   int count = 0;
-  for (int i = 0; i < HOUSE_SZ; i++) {
+  for (int i = 0; i < 16; i++) {
     count += (n >> i) & 1;
   }
   return count;
