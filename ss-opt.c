@@ -21,6 +21,10 @@ struct cell {
   int priority;  // 9 - Initial number of candidates
 };
 
+int priority(struct cell *cell) {
+  return cell->priority;
+}
+
 struct transform {
   int i; // Coordinates of cell transformed
   int j;
@@ -247,9 +251,6 @@ int main(int argc, char **argv) {
     // Construct priority queue--worklist for cells
     // Cells with fewer candidates are higher priority
     struct cell priorities[HOUSE_SZ][HOUSE_SZ];
-    int priority(struct cell *cell) {
-      return cell->priority;
-    }
 
     struct pq worklist;
     pq_init(&worklist, (int (*)(void *)) priority, N_CELLS);
