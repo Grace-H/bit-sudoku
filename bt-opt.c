@@ -7,11 +7,65 @@
 #include <stdio.h>
 #include "util.h"
 
+struct cell {
+  int i;
+  int j;
+  int priority;
+};
+
 /**
  * Get block number (0->9 reading left-right top-bottom) from i,j coordinates
  */
 static inline int blk_index(int i, int j) {
   return (i / BLK_WIDTH) * BLK_WIDTH + j / BLK_WIDTH;
+}
+
+/**
+ * Get i,j coordinates of top left cell in a block from its index
+ */
+static void blk_coords(int n, int *i, int *j) {
+  *i = (n / BLK_WIDTH) * BLK_WIDTH;
+  *j = (n % BLK_WIDTH) * BLK_WIDTH;
+}
+
+// Eliminate as candidate value of solved cell & propagate any other
+// solved cells process creates
+void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
+  uint16_t elim = ~cells[i][j];
+
+  for (int x = 0; x < HOUSE_SZ; x++) {
+    if (j != x && cells[i][x]) {
+      uint16_t old = cells[i][x];
+      cells[i][x] &= elim;
+      if ((old & (old - 1)) && !(cells[i][x] & (cells[i][x] - 1))) {
+        remove_candidate(cells, i, x);
+      }
+    }
+  }
+
+  for (int y = 0; y < HOUSE_SZ; y++) {
+    if (i != y && cells[y][j]) {
+      uint16_t old = cells[y][j];
+      cells[y][j] &= elim;
+      if ((old & (old - 1)) && !(cells[y][j] & (cells[y][j] - 1))) {
+        remove_candidate(cells, y, j);
+      }
+    }
+  }
+
+  int z1, z2;
+  blk_coords(blk_index(i, j), &z1, &z2);
+  for (int a = z1; a < z1 + BLK_WIDTH; a++) {
+    for (int b = z2; b < z2 + BLK_WIDTH; b++) {
+      if (!(a == i && b == j) && cells[a][b]) {
+        uint16_t old = cells[a][b];
+        cells[a][b] &= elim;
+        if ((old & (old - 1)) && !(cells[a][b] & (cells[a][b] - 1))) {
+          remove_candidate(cells, a, b);
+        }
+      }
+    }
+  }
 }
 
 /**
@@ -24,61 +78,94 @@ static inline int blk_index(int i, int j) {
  */
 int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
 	uint16_t max = 1 << (HOUSE_SZ + 1);
+	uint16_t target = max - 2;  // 1's in bits 1-9
 
 	// Bitvectors of all values present in each row/column for conflict checking
 	uint16_t row[HOUSE_SZ];
 	uint16_t col[HOUSE_SZ];
 	uint16_t blk[HOUSE_SZ];
+  uint16_t candidates[HOUSE_SZ][HOUSE_SZ];
 	for (int i = 0; i < HOUSE_SZ; i++) {
 		row[i] = 0;
 		col[i] = 0;
 		blk[i] = 0;
+    for (int j = 0; j < HOUSE_SZ; j++) {
+      candidates[i][j] = target;
+    }
 	}
 
-	for (int i = 0; i < HOUSE_SZ; i++) {
-		for (int j = 0; j < HOUSE_SZ; j++) {
-			row[i] |= cells[i][j];
-			col[j] |= cells[i][j];
-			blk[blk_index(i, j)] |= cells[i][j];
-		}
-	}
+  for (int i = 0; i < HOUSE_SZ; i++) {
+    for (int j = 0; j < HOUSE_SZ; j++) {
+      if (cells[i][j] & (cells[i][j] - 1)) {
+        row[i] |= cells[i][j];
+        col[j] |= cells[i][j];
+        blk[blk_index(i, j)] |= cells[i][j];
+        remove_candidate(candidates, i, j);
+      }
+    }
+  }
 
-	int n = 0;
+  int priority(struct cell *cell) {
+    return cell->priority;
+  }
+
+  struct pq pq;
+  pq_init(&pq, (int (*)(void *)) priority, N_CELLS);
+
+  struct cell priorities[HOUSE_SZ][HOUSE_SZ];
+  for (int i = 0; i < HOUSE_SZ; i++) {
+    for (int j = 0; j < HOUSE_SZ; j++) {
+      priorities[i][j].i = i;
+      priorities[i][j].j = j;
+      priorities[i][j].priority = bit_count(candidates[i][j]);
+      if (priorities[i][j].priority > 1)
+        pq_insert(&pq, &priorities[i][j]);
+    }
+  }
+
+  struct stack done;
+  stack_init(&done);
+
 	int delta = 1;  // Direction to change n
-	while (n < N_CELLS && n >= 0) {
-		int i = n / HOUSE_SZ;
-		int j = n % HOUSE_SZ;
+	while ((delta && !pq_is_empty(&pq)) || (!delta && !stack_is_empty(&done))) {
+    struct cell *cell;
+    if (delta) {
+      cell = pq_extract_max(&pq);
+      stack_push(&done, cell);
+    } else {
+      cell = stack_pop(&done);
+      pq_insert(&pq, cell);
+    }
+		int i = cell->i;
+		int j = cell->j;
 		int z = blk_index(i, j);
 
-		// If not part of the original puzzle
-		if (!((original[i] >> j) & 1)) {
-			if (cells[i][j] > 1) {
-				row[i] ^= cells[i][j];
-				col[j] ^= cells[i][j];
-				blk[z] ^= cells[i][j];
-			}
+    // Cell is partially solved, undo previously tried solution
+    if (cells[i][j] > 1) {
+      row[i] ^= cells[i][j];
+      col[j] ^= cells[i][j];
+      blk[z] ^= cells[i][j];
+    }
 
-			while (cells[i][j] < max) {
-				cells[i][j] <<= 1;
-				// No conflict with existing solved cells
-				if (!(cells[i][j] & row[i] || cells[i][j] & col[j] || cells[i][j] & blk[z])) {
-					row[i] |= cells[i][j];
-					col[j] |= cells[i][j];
-					blk[z] |= cells[i][j];
-					delta = 1;
-					break;
-				}
-			}
-			if (cells[i][j] >= max) {
-				cells[i][j] = 1;
-				delta = -1;
-			}
-		}
-		n += delta;
-	}
+    // Calculate new solution
+    while (cells[i][j] < max) {
+      cells[i][j] <<= 1;
+      // No conflict with existing solved cells
+      if (!(cells[i][j] & row[i] || cells[i][j] & col[j] || cells[i][j] & blk[z])) {
+        row[i] |= cells[i][j];
+        col[j] |= cells[i][j];
+        blk[z] |= cells[i][j];
+        delta = 1;
+        break;
+      }
+    }
+    if (cells[i][j] >= max) {
+      cells[i][j] = 1;
+      delta = 0;
+    }
+  }
 
 	// Check if solved
-	uint16_t target = max - 2;  // 1's in bits 1-9
 	uint16_t solved = target;
 	for (int i = 0; i < HOUSE_SZ; i++) {
 		solved &= row[i];
