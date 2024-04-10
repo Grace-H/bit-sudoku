@@ -102,7 +102,7 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
 
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
-      if (cells[i][j] & (cells[i][j] - 1)) {
+      if (cells[i][j] != 1) {
         row[i] |= cells[i][j];
         col[j] |= cells[i][j];
         blk[blk_index(i, j)] |= cells[i][j];
@@ -120,7 +120,7 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
       priorities[i][j].i = i;
       priorities[i][j].j = j;
       priorities[i][j].priority = 9 - bit_count(candidates[i][j]);
-      if (priorities[i][j].priority > 1)
+      if (priorities[i][j].priority < 8)
         pq_insert(&pq, &priorities[i][j]);
     }
   }
@@ -133,10 +133,8 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
     struct cell *cell;
     if (delta) {
       cell = pq_extract_max(&pq);
-      stack_push(&done, cell);
     } else {
       cell = stack_pop(&done);
-      pq_insert(&pq, cell);
     }
 		int i = cell->i;
 		int j = cell->j;
@@ -157,12 +155,14 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
         row[i] |= cells[i][j];
         col[j] |= cells[i][j];
         blk[z] |= cells[i][j];
+        stack_push(&done, cell);
         delta = 1;
         break;
       }
     }
     if (cells[i][j] >= max) {
       cells[i][j] = 1;
+      pq_insert(&pq, cell);
       delta = 0;
     }
   }
@@ -188,7 +188,7 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
-	// Initialize all cells to 0
+	// Initialize all cells to 1
 	uint16_t cells[HOUSE_SZ][HOUSE_SZ];
 	uint16_t original[HOUSE_SZ];
 	for (int i = 0; i < HOUSE_SZ; i++) {
