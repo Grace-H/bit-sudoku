@@ -40,7 +40,7 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   uint16_t elim = ~cells[i][j];
 
   for (int x = 0; x < HOUSE_SZ; x++) {
-    if (j != x && cells[i][x]) {
+    if (j != x) {
       uint16_t old = cells[i][x];
       cells[i][x] &= elim;
       if ((old & (old - 1)) && !(cells[i][x] & (cells[i][x] - 1))) {
@@ -50,7 +50,7 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   }
 
   for (int y = 0; y < HOUSE_SZ; y++) {
-    if (i != y && cells[y][j]) {
+    if (i != y) {
       uint16_t old = cells[y][j];
       cells[y][j] &= elim;
       if ((old & (old - 1)) && !(cells[y][j] & (cells[y][j] - 1))) {
@@ -63,7 +63,7 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   blk_coords(blk_index(i, j), &z1, &z2);
   for (int a = z1; a < z1 + BLK_WIDTH; a++) {
     for (int b = z2; b < z2 + BLK_WIDTH; b++) {
-      if (!(a == i && b == j) && cells[a][b]) {
+      if (!(a == i && b == j)) {
         uint16_t old = cells[a][b];
         cells[a][b] &= elim;
         if ((old & (old - 1)) && !(cells[a][b] & (cells[a][b] - 1))) {
@@ -106,6 +106,7 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
         row[i] |= cells[i][j];
         col[j] |= cells[i][j];
         blk[blk_index(i, j)] |= cells[i][j];
+        candidates[i][j] = cells[i][j];
         remove_candidate(candidates, i, j);
       }
     }
