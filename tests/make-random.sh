@@ -8,8 +8,7 @@ levels=( se1_2 se1_5 se1_7
 	se6_0 se6_1 se6_2 se6_3 se6_4 se6_6 se6_7 se6_8 se6_9
 	se7_0 se7_1 se7_2 se7_3 se7_4 se7_5 se7_7 se7_8 se7_9
 	se8_0 se8_1 se8_2 se8_3 se8_4 se8_5 se8_6 se8_7 se8_8 se8_9
-	se9_0 se9_1 se9_2 se9_3 
-	ai )
+	se9_0 se9_1 se9_2 se9_3 )
 
 if [[ -d sample ]] ; then
 	echo "Test directory already exists. If you really want to regenerate the test cases, remove the directory first."
@@ -17,9 +16,9 @@ if [[ -d sample ]] ; then
 	exit 1
 fi
 
-mkdir sample
+mkdir sample-large
 
 for l in "${levels[@]}"
 do
-	mv "${l}/$(ls ${l} | shuf -n 1)" sample/
+	mv "${l}/$(ls ${l} | shuf -n 10)" sample-large/
 done
