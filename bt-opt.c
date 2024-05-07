@@ -103,11 +103,18 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
       if (cells[i][j] != 1) {
-        row[i] |= cells[i][j];
-        col[j] |= cells[i][j];
-        blk[blk_index(i, j)] |= cells[i][j];
         candidates[i][j] = cells[i][j];
         remove_candidate(candidates, i, j);
+      }
+    }
+  }
+
+  for (int i = 0; i < HOUSE_SZ; i++) {
+    for (int j = 0; j < HOUSE_SZ; j++) {
+      if (candidates[i][j] != 1) {
+        row[i] |= candidates[i][j];
+        col[j] |= candidates[i][j];
+        blk[blk_index(i, j)] |= candidates[i][j];
       }
     }
   }
