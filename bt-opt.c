@@ -34,6 +34,40 @@ static void blk_coords(int n, int *i, int *j) {
   *j = (n % BLK_WIDTH) * BLK_WIDTH;
 }
 
+// Check if board is solved - each house has one instance of each number
+int is_solved(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+	uint16_t max = 1 << (HOUSE_SZ + 1);
+	uint16_t row[HOUSE_SZ];
+	uint16_t col[HOUSE_SZ];
+	uint16_t blk[HOUSE_SZ];
+	for (int i = 0; i < HOUSE_SZ; i++) {
+		row[i] = 0;
+		col[i] = 0;
+		blk[i] = 0;
+	}
+
+	for (int i = 0; i < HOUSE_SZ; i++) {
+		for (int j = 0; j < HOUSE_SZ; j++) {
+			row[i] |= cells[i][j];
+			col[j] |= cells[i][j];
+			blk[blk_index(i, j)] |= cells[i][j];
+		}
+	}
+
+	uint16_t target = max - 2;  // 1's in bits 1-9
+	uint16_t solved = target;
+	for (int i = 0; i < HOUSE_SZ; i++) {
+		solved &= row[i];
+		solved &= col[i];
+		solved &= blk[i];
+	}
+
+	if (solved == target) {
+		return 1;
+	}
+	return 0;
+}
+
 // Eliminate as candidate value of solved cell & propagate any other
 // solved cells process creates
 void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
@@ -173,6 +207,11 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
       pq_insert(&pq, cell);
       delta = 0;
     }
+  }
+
+  if (!is_solved(cells)) {
+    printf("oops\n");
+    return 1;
   }
 
 	// Check if solved
