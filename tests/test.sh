@@ -6,11 +6,12 @@
 
 # Usage: test.sh [-hv] <solver> <test-dir>
 
-function solve(){
-    if ! $1 $2 &> /dev/null ; then
-        echo "Test failed: $2" >> $3
+function solve() {
+    if ! "$1" "$2" &> /dev/null ; then
+        echo "Test failed: $2" >> "$3"
     fi
 }
+export -f solve
 
 verbose=false
 JOBS_MAX=1
@@ -30,27 +31,20 @@ while getopts "hvP:" OPT; do
 done
 shift $((OPTIND - 1))
 
-if [[ $# < 2 || ! -x $1 || ! -d $2 ]] ; then
+if [[ $# < 2 || ! -x "$1" || ! -d "$2" ]] ; then
     echo "Usage: test.sh [-hv] <solver> <test-dir>"
     exit 1
 fi
 
-total=0
-pass=0
-level=$(basename $2)
-logfile=tests/tmp/log_$level
+files=(`ls "$2"`)
+total=${#files[@]}
+level=$(basename "$2")
+logfile="tests/tmp/log_$level"
+cmd_str="solve $1 $2/\"\$@\" $logfile"
 
-touch $logfile
+truncate -s 0 $logfile
 
-for file in $2/*
-do
-    ((total++))
-    while [[ $(jobs -r | wc -l) -ge $JOBS_MAX ]] ; do
-	wait -n
-    done
-    solve $1 $file $logfile &
-done
-wait
+printf "%s\n" "${files[@]}" | xargs -P $JOBS_MAX -I {} -n 1 bash -c "$cmd_str" _ {}
 
 if [ $verbose = true ] ; then
     cat $logfile

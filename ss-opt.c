@@ -21,6 +21,10 @@ struct cell {
   int priority;  // 9 - Initial number of candidates
 };
 
+int priority(struct cell *cell) {
+  return cell->priority;
+}
+
 struct transform {
   int i; // Coordinates of cell transformed
   int j;
@@ -88,8 +92,8 @@ void remove_candidate(uint16_t cells[HOUSE_SZ][HOUSE_SZ], int i, int j) {
   }
 }
 
-// Check if the board is valid - all cells have at least one candidate
-int is_valid(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
+// Check if board is solved - each house has one instance of each number
+int is_solved(const uint16_t cells[HOUSE_SZ][HOUSE_SZ]) {
 	uint16_t max = 1 << HOUSE_SZ;
 	uint16_t row[HOUSE_SZ];
 	uint16_t col[HOUSE_SZ];
@@ -247,9 +251,6 @@ int main(int argc, char **argv) {
     // Construct priority queue--worklist for cells
     // Cells with fewer candidates are higher priority
     struct cell priorities[HOUSE_SZ][HOUSE_SZ];
-    int priority(struct cell *cell) {
-      return cell->priority;
-    }
 
     struct pq worklist;
     pq_init(&worklist, (int (*)(void *)) priority, N_CELLS);
@@ -342,7 +343,7 @@ int main(int argc, char **argv) {
     }
 
     // Terminate early on failure
-    if (!is_valid(cells))
+    if (!is_solved(cells))
       return 1;
   }
   return 0;
