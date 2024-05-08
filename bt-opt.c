@@ -171,11 +171,15 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
   stack_init(&done);
 
 	int delta = 1;  // Direction to change n
+  int backtracks = 0;
 	while ((delta && !pq_is_empty(&pq)) || (!delta && !stack_is_empty(&done))) {
     struct cell *cell;
     if (delta) {
+      printf("forward\n");
       cell = pq_extract_max(&pq);
     } else {
+      printf("backward\n");
+      backtracks++;
       cell = stack_pop(&done);
     }
 		int i = cell->i;
@@ -225,6 +229,8 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
 	if (solved != target) {
 		return 1;
 	}
+
+  fprintf(stdout, "%d", backtracks);
 	return 0;
 }
 
