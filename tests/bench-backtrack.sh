@@ -10,8 +10,25 @@ if [[ "$(basename $PWD)" == "tests" ]] ; then
 	exit 1
 fi
 
+csv=false
+while getopts "hc" OPT ; do
+	case $OPT in
+		c)
+			csv=true
+			;;
+		h)
+			echo "Usage: bench-backtrack.sh"
+			exit 1
+			;;
+	esac
+done
+
 testdir="tests/sample/"
-printf "%20s %10s %10s %10s %10s\n" "File" "bt" "bt-opt" "ss" "ss-opt"
+if $csv ; then
+	printf "%s,%s,%s,%s,%s\n" "File" "bt" "bt-opt" "ss" "ss-opt"
+else
+	printf "%20s %10s %10s %10s %10s\n" "File" "bt" "bt-opt" "ss" "ss-opt"
+fi
 
 for f in ${testdir}*
 do
@@ -20,6 +37,10 @@ do
 	ss=$(./ss ${f})
 	ssopt=$(./ss-opt ${f})
 
-	printf "%20s %10d %10d %10d %10d\n" ${f#${testdir}} ${bt} ${btopt} ${ss} ${ssopt}
+	if $csv ; then
+		printf "%s,%d,%d,%d,%d\n" ${f#${testdir}} ${bt} ${btopt} ${ss} ${ssopt}
+	else
+		printf "%20s %10d %10d %10d %10d\n" ${f#${testdir}} ${bt} ${btopt} ${ss} ${ssopt}
+	fi
 done
 
