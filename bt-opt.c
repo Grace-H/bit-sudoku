@@ -145,7 +145,8 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
 
   for (int i = 0; i < HOUSE_SZ; i++) {
     for (int j = 0; j < HOUSE_SZ; j++) {
-      if (cells[i][j] != 1) {
+      if (!(candidates[i][j] & (candidates[i][j] - 1))) {
+        cells[i][j] = candidates[i][j];
         row[i] |= cells[i][j];
         col[j] |= cells[i][j];
         blk[blk_index(i, j)] |= cells[i][j];
@@ -175,10 +176,8 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
 	while ((delta && !pq_is_empty(&pq)) || (!delta && !stack_is_empty(&done))) {
     struct cell *cell;
     if (delta) {
-      printf("forward\n");
       cell = pq_extract_max(&pq);
     } else {
-      printf("backward\n");
       backtracks++;
       cell = stack_pop(&done);
     }
@@ -194,8 +193,8 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
     }
 
     // Calculate new solution
+    cells[i][j] <<= 1;
     while (cells[i][j] < max) {
-      cells[i][j] <<= 1;
       // No conflict with existing solved cells
       if (!(cells[i][j] & row[i] || cells[i][j] & col[j] || cells[i][j] & blk[z])) {
         row[i] |= cells[i][j];
@@ -205,6 +204,7 @@ int solve(uint16_t cells[HOUSE_SZ][HOUSE_SZ], uint16_t original[HOUSE_SZ]) {
         delta = 1;
         break;
       }
+      cells[i][j] <<= 1;
     }
     if (cells[i][j] >= max) {
       cells[i][j] = 1;
