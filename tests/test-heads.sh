@@ -24,9 +24,7 @@ fi
 
 cores=`sysctl -n hw.ncpu`
 per=$(($cores / 3))
-echo $per
 
 cmd_str="tests/test.sh -P $per $1 tests/head\"\$@\""
-echo $cmd_str
 
 printf "%s\n" "${heads[@]}" | xargs -P 3 -I {} -n 1 bash -c "$cmd_str" _ {}
